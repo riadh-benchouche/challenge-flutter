@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.controller});
@@ -78,9 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: 329,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/');
-                      },
+                      onPressed: () => context.go('/'),
                       style: theme.elevatedButtonTheme.style,
                       child: const Text('Connexion',
                           style: TextStyle(
@@ -100,9 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(width: 2.5),
                     InkWell(
-                      onTap: () {
-                        Navigator.pushNamed(context, '/signup');
-                      },
+                      onTap: () => context.go('/signup'),
                       child: Text(
                         'Crée en un',
                         style: theme.textTheme.bodyMedium?.copyWith(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key, required this.controller});
@@ -123,9 +124,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     width: 329,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/');
-                      },
+                      onPressed: () => context.go('/'),
                       style: theme.elevatedButtonTheme.style,
                       child: const Text('Créer un compte',
                           style: TextStyle(
@@ -145,9 +144,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(width: 2.5),
                     InkWell(
-                      onTap: () {
-                        Navigator.pushNamed(context, '/login');
-                      },
+                      onTap: () => context.go('/login'),
                       child: Text(
                         'Connectez-vous',
                         style: theme.textTheme.bodyMedium?.copyWith(

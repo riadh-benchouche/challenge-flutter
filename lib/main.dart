@@ -1,14 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 
 import 'providers/user_provider.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
+import 'screens/events/events_screen.dart';
 
 void main() {
   runApp(const MyApp());
 }
+
+final GoRouter _router = GoRouter(
+  routes: <RouteBase>[
+    GoRoute(
+      path: '/',
+      builder: (BuildContext context, GoRouterState state) {
+        return const HomeScreen();
+      },
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/login',
+          builder: (BuildContext context, GoRouterState state) =>
+              LoginScreen(controller: PageController()),
+        ),
+        GoRoute(
+          path: '/signup',
+          builder: (BuildContext context, GoRouterState state) =>
+              SignupScreen(controller: PageController()),
+        ),
+        GoRoute(
+          path: '/events',
+          builder: (BuildContext context, GoRouterState state) =>
+              const EventScreen(),
+        ),
+      ],
+    ),
+  ],
+);
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -19,7 +49,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()),
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
         title: 'Flutter Association Manager',
         theme: ThemeData(
           primaryColor: const Color(0xFF001B40),
@@ -75,12 +105,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-        initialRoute: '/login',
-        routes: {
-          '/': (context) => const HomeScreen(),
-          '/login': (context) => LoginScreen(controller: PageController()),
-          '/signup': (context) => SignupScreen(controller: PageController()),
-        },
+        routerConfig: _router,
       ),
     );
   }

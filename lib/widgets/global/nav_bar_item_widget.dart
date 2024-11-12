@@ -3,18 +3,18 @@ import 'package:flutter/material.dart';
 class NavBarItem extends StatelessWidget {
   final IconData icon;
   final String label;
-  final int index;
-  final int selectedIndex;
+  final String selectedRoute;
   final ThemeData theme;
-  final Function(int) onItemTapped;
+  final String route;
+  final Function(String) onItemTapped;
 
   const NavBarItem({
     super.key,
     required this.icon,
     required this.label,
-    required this.index,
-    required this.selectedIndex,
+    required this.selectedRoute,
     required this.theme,
+    required this.route,
     required this.onItemTapped,
   });
 
@@ -22,20 +22,20 @@ class NavBarItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: InkWell(
-        onTap: () => onItemTapped(index),
+        onTap: () => onItemTapped(route),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
-              color: selectedIndex == index
+              color: selectedRoute == route
                   ? theme.colorScheme.secondary
                   : Colors.white,
             ),
             Text(
               label,
               style: TextStyle(
-                color: selectedIndex == index
+                color: selectedRoute == route
                     ? theme.colorScheme.secondary
                     : Colors.white,
               ),

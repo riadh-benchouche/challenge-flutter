@@ -1,8 +1,10 @@
-import 'package:challenge_flutter/widgets/global/nav_bar_item_widget.dart';
+import 'package:challenge_flutter/widgets/global/custom_app_bar.dart';
+import 'package:challenge_flutter/widgets/global/custom_bottom_navigation_bar.dart';
 import 'package:challenge_flutter/widgets/home/association_card_widget.dart';
 import 'package:challenge_flutter/widgets/home/event_card_widget.dart';
 import 'package:challenge_flutter/widgets/home/stat_card_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,13 +14,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
+  String _selectedRoute = '/';
 
-  void _onItemTapped(int index) {
+  void _onItemTapped(String route) {
     setState(() {
-      _selectedIndex = index;
+      _selectedRoute = route;
     });
-    // Handle navigation based on index here
+    context.go(route);
   }
 
   @override
@@ -26,56 +28,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(140),
-        child: Container(
-          decoration: BoxDecoration(
-            color: theme.primaryColor,
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Hi, John Doe',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Home',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline,
-                        color: Colors.white),
-                    onPressed: () {},
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.person, color: Colors.white),
-                    onPressed: () {},
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+      appBar: CustomAppBar(
+        theme: theme,
+        userName: 'John Doe',
+        pageTitle: 'Home',
+        onAddPressed: () {
+          // Votre logique pour le bouton d'ajout
+        },
+        onProfilePressed: () {
+          // Votre logique pour le bouton profil
+        },
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -203,45 +165,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: Container(
-        height: 70,
-        color: theme.primaryColor,
-        child: Row(
-          children: [
-            NavBarItem(
-              icon: Icons.home_rounded,
-              label: 'Home',
-              index: 0,
-              selectedIndex: _selectedIndex,
-              theme: theme,
-              onItemTapped: _onItemTapped,
-            ),
-            NavBarItem(
-              icon: Icons.event_rounded,
-              label: 'Events',
-              index: 1,
-              selectedIndex: _selectedIndex,
-              theme: theme,
-              onItemTapped: _onItemTapped,
-            ),
-            NavBarItem(
-              icon: Icons.home_work_rounded,
-              label: 'Associations',
-              index: 2,
-              selectedIndex: _selectedIndex,
-              theme: theme,
-              onItemTapped: _onItemTapped,
-            ),
-            NavBarItem(
-              icon: Icons.message_rounded,
-              label: 'Messages',
-              index: 3,
-              selectedIndex: _selectedIndex,
-              theme: theme,
-              onItemTapped: _onItemTapped,
-            ),
-          ],
-        ),
+      bottomNavigationBar: CustomBottomNavigationBar(
+        selectedRoute: _selectedRoute,
+        theme: theme,
+        onItemTapped: _onItemTapped,
       ),
     );
   }
