@@ -2,7 +2,6 @@ import 'package:challenge_flutter/widgets/global/custom_app_bar.dart';
 import 'package:challenge_flutter/widgets/global/custom_bottom_navigation_bar.dart';
 import 'package:challenge_flutter/widgets/home/event_card_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class EventScreen extends StatelessWidget {
   const EventScreen({super.key});

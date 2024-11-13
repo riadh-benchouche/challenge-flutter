@@ -1,4 +1,3 @@
-import 'package:challenge_flutter/main.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -55,7 +54,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     icon: const Icon(Icons.add_circle_outline,
                         color: Colors.white),
                     onPressed: () {
-                      context.go('/join');
+                      context.go('/join-association');
                     }),
                 IconButton(
                   icon: const Icon(Icons.person, color: Colors.white),
