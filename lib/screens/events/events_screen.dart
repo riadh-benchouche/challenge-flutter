@@ -10,6 +10,24 @@ class EventScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    final List<Map<String, String>> events = [
+      {
+        'eventName': 'Charity Run',
+        'eventDate': '2024-04-25',
+        'eventLocation': 'Central Park, NY',
+        'eventAssociation': 'Health & Wellness Club',
+        'eventCategory': 'Sports',
+      },
+      {
+        'eventName': 'Music Festival',
+        'eventDate': '2024-06-10',
+        'eventLocation': 'Downtown Arena',
+        'eventAssociation': 'Youth Music Group',
+        'eventCategory': 'Music',
+      },
+    ];
+
     return Scaffold(
       appBar: const CustomAppBar(
         userName: 'John Doe',
@@ -20,17 +38,19 @@ class EventScreen extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: List.generate(
-                    10,
-                    (index) => EventCard(
+                  children: events.map((event) {
+                    return EventCard(
                       theme: theme,
-                      eventName: 'Event $index',
-                      eventDate: '2022-01-01',
-                    ),
-                  ),
+                      eventName: event['eventName']!,
+                      eventDate: event['eventDate']!,
+                      eventLocation: event['eventLocation']!,
+                      eventAssociation: event['eventAssociation']!,
+                      eventCategory: event['eventCategory']!,
+                    );
+                  }).toList(),
                 ),
               ),
             ),

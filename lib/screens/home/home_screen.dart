@@ -2,6 +2,7 @@ import 'package:challenge_flutter/widgets/global/custom_app_bar.dart';
 import 'package:challenge_flutter/widgets/global/custom_bottom_navigation_bar.dart';
 import 'package:challenge_flutter/widgets/home/event_card_widget.dart';
 import 'package:challenge_flutter/widgets/home/stat_card_widget.dart';
+import 'package:challenge_flutter/widgets/home/top_association_card.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,6 +12,49 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    final List<Map<String, dynamic>> topAssociations = [
+      {
+        'name': 'Association A',
+        'imageSrc': 'assets/images/association-1.jpg',
+        'userCount': 150,
+      },
+      {
+        'name': 'Association B',
+        'imageSrc': 'assets/images/association-2.jpg',
+        'userCount': 200,
+      },
+      {
+        'name': 'Association C',
+        'imageSrc': 'assets/images/association-3.jpg',
+        'userCount': 180,
+      },
+    ];
+
+    final List<Map<String, String>> events = [
+      {
+        'eventName': 'Charity Run',
+        'eventDate': 'April 25, 2024',
+        'eventLocation': 'Central Park, NY',
+        'eventAssociation': 'Health & Wellness Club',
+        'eventCategory': 'Sports',
+      },
+      {
+        'eventName': 'Music Festival',
+        'eventDate': 'June 10, 2024',
+        'eventLocation': 'Downtown Arena',
+        'eventAssociation': 'Youth Music Group',
+        'eventCategory': 'Music',
+      },
+      {
+        'eventName': 'Tech Conference',
+        'eventDate': 'May 15, 2024',
+        'eventLocation': 'Convention Center',
+        'eventAssociation': 'Tech Enthusiasts',
+        'eventCategory': 'Technology',
+      },
+    ];
+
     return Scaffold(
       appBar: const CustomAppBar(
         userName: 'John Doe',
@@ -39,12 +83,14 @@ class HomeScreen extends StatelessWidget {
                     icon: Icons.group,
                     theme: theme,
                   ),
+                  const SizedBox(width: 10),
                   StatCard(
                     title: 'Events',
                     count: '10',
                     icon: Icons.event,
                     theme: theme,
                   ),
+                  const SizedBox(width: 10),
                   StatCard(
                     title: 'Members',
                     count: '100',
@@ -64,7 +110,6 @@ class HomeScreen extends StatelessWidget {
                       color: theme.primaryColor,
                     ),
                   ),
-                  const Spacer(),
                   TextButton(
                     onPressed: () {
                       context.go('/associations');
@@ -76,44 +121,47 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Événements à venir',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.primaryColor,
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () {
-                      context.go('/events');
-                    },
-                    child: Text(
-                      'Voir Tout',
-                      style: TextStyle(color: theme.primaryColor),
-                    ),
-                  ),
-                ],
+              SizedBox(
+                height: 200,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: topAssociations.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 10),
+                  itemBuilder: (context, index) {
+                    final association = topAssociations[index];
+                    return TopAssociationCard(
+                      name: association['name'],
+                      imageSrc: association['imageSrc'],
+                      userCount: association['userCount'],
+                    );
+                  },
+                ),
               ),
               const SizedBox(height: 10),
-              EventCard(
-                  eventName: 'Event 1',
-                  eventDate: 'Date: Jan 12, 2024',
-                  theme: theme),
+              Text(
+                'Événements à venir',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.primaryColor,
+                ),
+              ),
               const SizedBox(height: 10),
-              EventCard(
-                  eventName: 'Event 2',
-                  eventDate: 'Date: Jan 5, 2024',
-                  theme: theme),
-              const SizedBox(height: 10),
-              EventCard(
-                  eventName: 'Event 3',
-                  eventDate: 'Date: Jan 2, 2024',
-                  theme: theme)
+              Column(
+                children: events.map((event) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 0),
+                    child: EventCard(
+                      theme: theme,
+                      eventName: event['eventName']!,
+                      eventDate: event['eventDate']!,
+                      eventLocation: event['eventLocation']!,
+                      eventAssociation: event['eventAssociation']!,
+                      eventCategory: event['eventCategory']!,
+                    ),
+                  );
+                }).toList(),
+              ),
             ],
           ),
         ),

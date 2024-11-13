@@ -13,16 +13,22 @@ class AssociationsScreen extends StatefulWidget {
 class _AssociationsScreenState extends State<AssociationsScreen> {
   List<Map<String, dynamic>> associations = [
     {
+      'id': '1',
       'name': 'Association A',
       'imageSrc': 'assets/images/association-1.jpg',
       'userCount': 150,
       'eventCount': 10,
+      'description': 'A great community for health and wellness.',
+      'isActive': true,
     },
     {
+      'id': '2',
       'name': 'Association B',
       'imageSrc': 'assets/images/association-1.jpg',
       'userCount': 200,
       'eventCount': 15,
+      'description': 'Fostering youth through music and art.',
+      'isActive': false,
     },
   ];
 
@@ -71,19 +77,19 @@ class _AssociationsScreenState extends State<AssociationsScreen> {
             child: GridView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 6,
-                mainAxisSpacing: 10,
-                childAspectRatio: 0.7,
+                crossAxisCount: 1,
               ),
               itemCount: filteredAssociations.length,
               itemBuilder: (context, index) {
                 final association = filteredAssociations[index];
                 return AssociationCard(
+                  associationId: association['id'] as String,
                   associationName: association['name'] as String,
                   imageSrc: association['imageSrc'] as String,
                   userCount: association['userCount'] as int,
                   eventCount: association['eventCount'] as int,
+                  description: association['description'] as String,
+                  isActive: association['isActive'] as bool,
                 );
               },
             ),
