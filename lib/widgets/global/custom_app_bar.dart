@@ -1,23 +1,18 @@
 import 'package:flutter/material.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final ThemeData theme;
   final String userName;
   final String pageTitle;
-  final VoidCallback onAddPressed;
-  final VoidCallback onProfilePressed;
 
   const CustomAppBar({
     super.key,
-    required this.theme,
     required this.userName,
     required this.pageTitle,
-    required this.onAddPressed,
-    required this.onProfilePressed,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return PreferredSize(
       preferredSize: const Size.fromHeight(140),
       child: Container(
@@ -26,7 +21,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -54,12 +50,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-                  onPressed: onAddPressed,
-                ),
+                    icon: const Icon(Icons.add_circle_outline,
+                        color: Colors.white),
+                    onPressed: () {}),
                 IconButton(
                   icon: const Icon(Icons.person, color: Colors.white),
-                  onPressed: onProfilePressed,
+                  onPressed: () {},
                 ),
               ],
             ),

@@ -7,6 +7,13 @@ import 'screens/home/home_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/events/events_screen.dart';
+import 'screens/events/event_detail_screen.dart';
+import 'screens/associations/associations_screen.dart';
+import 'screens/associations/association_detail_screen.dart';
+import 'screens/messages/messages_screen.dart';
+import 'screens/messages/message_detail_screen.dart';
+import 'screens/profile/profile_screen.dart';
+import 'screens/associations/join_association_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,19 +28,61 @@ final GoRouter _router = GoRouter(
       },
       routes: <RouteBase>[
         GoRoute(
-          path: '/login',
+          path: 'login',
           builder: (BuildContext context, GoRouterState state) =>
               LoginScreen(controller: PageController()),
         ),
         GoRoute(
-          path: '/signup',
+          path: 'register',
           builder: (BuildContext context, GoRouterState state) =>
               SignupScreen(controller: PageController()),
         ),
         GoRoute(
-          path: '/events',
+          path: 'events',
           builder: (BuildContext context, GoRouterState state) =>
               const EventScreen(),
+          routes: <RouteBase>[
+            GoRoute(
+              path: ':eventId',
+              builder: (BuildContext context, GoRouterState state) =>
+                  EventDetailScreen(eventId: state.pathParameters['eventId']!),
+            ),
+          ],
+        ),
+        GoRoute(
+          path: 'associations',
+          builder: (BuildContext context, GoRouterState state) =>
+              const AssociationsScreen(),
+          routes: <RouteBase>[
+            GoRoute(
+              path: ':associationId',
+              builder: (BuildContext context, GoRouterState state) =>
+                  AssociationDetailScreen(
+                      associationId: state.pathParameters['associationId']!),
+            ),
+          ],
+        ),
+        GoRoute(
+          path: 'messages',
+          builder: (BuildContext context, GoRouterState state) =>
+              MessagesScreen(),
+          routes: <RouteBase>[
+            GoRoute(
+              path: ':roomId',
+              builder: (BuildContext context, GoRouterState state) =>
+                  MessageDetailScreen(roomId: state.pathParameters['roomId']!),
+            ),
+          ],
+        ),
+        GoRoute(
+          path: 'profile',
+          builder: (BuildContext context, GoRouterState state) =>
+              const ProfileScreen(),
+        ),
+        GoRoute(
+          path: 'join-association',
+          builder: (BuildContext context, GoRouterState state) =>
+              const JoinAssociationScreen(),
         ),
       ],
     ),

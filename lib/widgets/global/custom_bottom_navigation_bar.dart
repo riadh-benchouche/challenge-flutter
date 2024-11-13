@@ -1,59 +1,61 @@
 import 'package:flutter/material.dart';
-import 'nav_bar_item_widget.dart';
+import 'package:go_router/go_router.dart';
 
-class CustomBottomNavigationBar extends StatelessWidget {
-  final String selectedRoute;
-  final ThemeData theme;
-  final Function(String) onItemTapped;
+class CustomBottomNavigationBar extends StatefulWidget {
+  const CustomBottomNavigationBar({super.key});
 
-  const CustomBottomNavigationBar({
-    super.key,
-    required this.selectedRoute,
-    required this.theme,
-    required this.onItemTapped,
-  });
+  @override
+  _CustomBottomNavigationBarState createState() =>
+      _CustomBottomNavigationBarState();
+}
+
+class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
+  int _selectedIndex = 0;
+
+  static const List<String> _routes = [
+    '/',
+    '/events',
+    '/associations',
+    '/messages',
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    context.go(_routes[index]);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 70,
-      color: theme.primaryColor,
-      child: Row(
-        children: [
-          NavBarItem(
-            icon: Icons.home_rounded,
-            label: 'Home',
-            selectedRoute: selectedRoute,
-            theme: theme,
-            route: '/',
-            onItemTapped: onItemTapped,
-          ),
-          NavBarItem(
-            icon: Icons.event_rounded,
-            label: 'Events',
-            selectedRoute: selectedRoute,
-            route: '/events',
-            theme: theme,
-            onItemTapped: onItemTapped,
-          ),
-          NavBarItem(
-            icon: Icons.home_work_rounded,
-            label: 'Associations',
-            selectedRoute: selectedRoute,
-            theme: theme,
-            route: '/associations',
-            onItemTapped: onItemTapped,
-          ),
-          NavBarItem(
-            icon: Icons.message_rounded,
-            label: 'Messages',
-            selectedRoute: selectedRoute,
-            theme: theme,
-            route: '/messages',
-            onItemTapped: onItemTapped,
-          ),
-        ],
-      ),
+    final theme = Theme.of(context);
+
+    return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: theme.primaryColor,
+      currentIndex: _selectedIndex,
+      selectedItemColor: theme.colorScheme.secondary,
+      unselectedItemColor: Colors.white,
+      showUnselectedLabels: true,
+      onTap: _onItemTapped,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_rounded),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.event_rounded),
+          label: 'Events',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_work_rounded),
+          label: 'Associations',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.message_rounded),
+          label: 'Messages',
+        ),
+      ],
     );
   }
 }

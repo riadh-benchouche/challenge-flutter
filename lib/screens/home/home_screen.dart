@@ -6,38 +6,30 @@ import 'package:challenge_flutter/widgets/home/stat_card_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  String _selectedRoute = '/';
-
-  void _onItemTapped(String route) {
-    setState(() {
-      _selectedRoute = route;
-    });
-    context.go(route);
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
+    final List<Map<String, dynamic>> associations = [
+      {
+        'name': 'Association A',
+        'imageSrc': 'assets/images/association-1.jpg',
+        'userCount': 150,
+        'eventCount': 10,
+      },
+      {
+        'name': 'Association B',
+        'imageSrc': 'assets/images/association-1.jpg',
+        'userCount': 200,
+        'eventCount': 15,
+      },
+    ];
     return Scaffold(
-      appBar: CustomAppBar(
-        theme: theme,
+      appBar: const CustomAppBar(
         userName: 'John Doe',
         pageTitle: 'Home',
-        onAddPressed: () {
-          // Votre logique pour le bouton d'ajout
-        },
-        onProfilePressed: () {
-          // Votre logique pour le bouton profil
-        },
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -90,9 +82,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Spacer(),
                   TextButton(
                     onPressed: () {
-                      // Navigate to All Events Page
+                      context.go('/associations');
                     },
-                    // text with icon
                     child: Text(
                       'Voir Tout',
                       style: TextStyle(color: theme.primaryColor),
@@ -101,28 +92,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  AssociationCard(
-                    associationName: 'Association 1',
-                    imageSrc: 'assets/images/association-1.jpg',
-                    theme: theme,
-                  ),
-                  AssociationCard(
-                    associationName: 'Association 2',
-                    imageSrc: 'assets/images/association-1.jpg',
-                    theme: theme,
-                  ),
-                  AssociationCard(
-                    associationName: 'Association 3',
-                    imageSrc: 'assets/images/association-1.jpg',
-                    theme: theme,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Upcoming Events
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -136,9 +105,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Spacer(),
                   TextButton(
                     onPressed: () {
-                      // Navigate to All Events Page
+                      context.go('/events');
                     },
-                    // text with icon
                     child: Text(
                       'Voir Tout',
                       style: TextStyle(color: theme.primaryColor),
@@ -165,11 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        selectedRoute: _selectedRoute,
-        theme: theme,
-        onItemTapped: _onItemTapped,
-      ),
+      bottomNavigationBar: const CustomBottomNavigationBar(),
     );
   }
 }
