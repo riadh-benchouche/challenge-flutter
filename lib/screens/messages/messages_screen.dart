@@ -34,8 +34,8 @@ class MessagesScreen extends StatelessWidget {
         userName: 'John Doe',
         pageTitle: 'Messages',
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 15),
+      body: ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: 10),
         itemCount: _associations.length,
         itemBuilder: (context, index) {
           final association = _associations[index];
@@ -43,33 +43,59 @@ class MessagesScreen extends StatelessWidget {
             leading: CircleAvatar(
               backgroundImage: AssetImage(association['imageUrl']),
               radius: 25,
+              backgroundColor: Colors.grey[200],
             ),
             title: Text(
               association['name'],
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
+            subtitle: association['unreadMessages'] > 0
+                ? const Text(
+                    'You have new messages',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                    ),
+                  )
+                : const Text(
+                    'No new messages',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                    ),
+                  ),
             trailing: association['unreadMessages'] > 0
                 ? Container(
-                    padding: const EdgeInsets.all(6),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 4,
+                      horizontal: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFDE01),
+                      color: Colors.redAccent,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       '${association['unreadMessages']}',
                       style: const TextStyle(
-                        color: Colors.black,
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
+                        fontSize: 12,
                       ),
                     ),
                   )
                 : null,
             onTap: () {
-              // Navigation vers la salle de discussion avec l'ID
               context.go('/messages/${association['id']}');
             },
           );
         },
+        separatorBuilder: (context, index) => const Divider(
+          color: Colors.grey,
+          thickness: 0.5,
+        ),
       ),
       bottomNavigationBar: const CustomBottomNavigationBar(),
     );
