@@ -23,66 +23,89 @@ final GoRouter _router = GoRouter(
   routes: <RouteBase>[
     GoRoute(
       path: '/',
-      builder: (BuildContext context, GoRouterState state) {
-        return const HomeScreen();
-      },
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          const MaterialPage(
+        child: HomeScreen(),
+      ),
       routes: <RouteBase>[
         GoRoute(
           path: 'login',
-          builder: (BuildContext context, GoRouterState state) =>
-              LoginScreen(controller: PageController()),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              MaterialPage(
+            child: LoginScreen(controller: PageController()),
+          ),
         ),
         GoRoute(
           path: 'register',
-          builder: (BuildContext context, GoRouterState state) =>
-              SignupScreen(controller: PageController()),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              MaterialPage(
+            child: SignupScreen(controller: PageController()),
+          ),
         ),
         GoRoute(
           path: 'events',
-          builder: (BuildContext context, GoRouterState state) =>
-              const EventScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              const MaterialPage(
+            child: EventScreen(),
+          ),
           routes: <RouteBase>[
             GoRoute(
               path: ':eventId',
-              builder: (BuildContext context, GoRouterState state) =>
-                  EventDetailScreen(eventId: state.pathParameters['eventId']!),
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+                  MaterialPage(
+                child: EventDetailScreen(
+                    eventId: state.pathParameters['eventId']!),
+              ),
             ),
           ],
         ),
         GoRoute(
           path: 'associations',
-          builder: (BuildContext context, GoRouterState state) =>
-              const AssociationsScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              const MaterialPage(
+            child: AssociationsScreen(),
+          ),
           routes: <RouteBase>[
             GoRoute(
               path: ':associationId',
-              builder: (BuildContext context, GoRouterState state) =>
-                  AssociationDetailScreen(
-                      associationId: state.pathParameters['associationId']!),
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+                  MaterialPage(
+                child: AssociationDetailScreen(
+                    associationId: state.pathParameters['associationId']!),
+              ),
             ),
           ],
         ),
         GoRoute(
           path: 'messages',
-          builder: (BuildContext context, GoRouterState state) =>
-              MessagesScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              MaterialPage(
+            child: MessagesScreen(),
+          ),
           routes: <RouteBase>[
             GoRoute(
               path: ':roomId',
-              builder: (BuildContext context, GoRouterState state) =>
-                  MessageDetailScreen(roomId: state.pathParameters['roomId']!),
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+                  MaterialPage(
+                child: MessageDetailScreen(
+                    roomId: state.pathParameters['roomId']!),
+              ),
             ),
           ],
         ),
         GoRoute(
           path: 'profile',
-          builder: (BuildContext context, GoRouterState state) =>
-              const ProfileScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              const MaterialPage(
+            child: ProfileScreen(),
+          ),
         ),
         GoRoute(
           path: 'join-association',
-          builder: (BuildContext context, GoRouterState state) =>
-              const JoinAssociationScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              const MaterialPage(
+            child: JoinAssociationScreen(),
+          ),
         ),
       ],
     ),

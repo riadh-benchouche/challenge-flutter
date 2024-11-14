@@ -21,14 +21,24 @@ class HomeScreen extends StatelessWidget {
       },
       {
         'name': 'Association B',
-        'imageSrc': 'assets/images/association-2.jpg',
+        'imageSrc': 'assets/images/association-1.jpg',
         'userCount': 200,
       },
       {
         'name': 'Association C',
-        'imageSrc': 'assets/images/association-3.jpg',
+        'imageSrc': 'assets/images/association-1.jpg',
         'userCount': 180,
       },
+      {
+        'name': 'Association D',
+        'imageSrc': 'assets/images/association-1.jpg',
+        'userCount': 120,
+      },
+      {
+        'name': 'Association E',
+        'imageSrc': 'assets/images/association-1.jpg',
+        'userCount': 100,
+      }
     ];
 
     final List<Map<String, String>> events = [
@@ -122,12 +132,12 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               SizedBox(
-                height: 200,
+                height: 180,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: topAssociations.length,
                   separatorBuilder: (context, index) =>
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 6),
                   itemBuilder: (context, index) {
                     final association = topAssociations[index];
                     return TopAssociationCard(
@@ -149,16 +159,13 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 10),
               Column(
                 children: events.map((event) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 0),
-                    child: EventCard(
-                      theme: theme,
-                      eventName: event['eventName']!,
-                      eventDate: event['eventDate']!,
-                      eventLocation: event['eventLocation']!,
-                      eventAssociation: event['eventAssociation']!,
-                      eventCategory: event['eventCategory']!,
-                    ),
+                  return EventCard(
+                    theme: theme,
+                    eventName: event['eventName']!,
+                    eventDate: event['eventDate']!,
+                    eventLocation: event['eventLocation']!,
+                    eventAssociation: event['eventAssociation']!,
+                    eventCategory: event['eventCategory']!,
                   );
                 }).toList(),
               ),

@@ -39,12 +39,12 @@ class StatCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.white, size: 35),
+              Icon(icon, color: theme.colorScheme.secondary, size: 35),
               const SizedBox(height: 10),
               Text(
                 count,
                 style: theme.textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
+                  color: theme.colorScheme.secondary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -52,7 +52,7 @@ class StatCard extends StatelessWidget {
               Text(
                 title,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.white70,
+                  color: Colors.white,
                 ),
               ),
             ],

@@ -20,19 +20,19 @@ class TopAssociationCard extends StatelessWidget {
       ),
       elevation: 3,
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
+        padding: const EdgeInsets.all(6),
+        child: Column(
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.asset(
                 imageSrc,
-                height: 50,
-                width: 50,
+                height: 100,
+                width: 100,
                 fit: BoxFit.cover,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(height: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
