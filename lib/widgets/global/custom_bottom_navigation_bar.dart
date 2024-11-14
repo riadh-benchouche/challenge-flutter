@@ -1,30 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
-class CustomBottomNavigationBar extends StatefulWidget {
-  const CustomBottomNavigationBar({super.key});
+class CustomBottomNavigationBar extends StatelessWidget {
+  final int currentIndex;
+  final Function(int) onTap;
 
-  @override
-  _CustomBottomNavigationBarState createState() =>
-      _CustomBottomNavigationBarState();
-}
-
-class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
-  int _selectedIndex = 0;
-
-  static const List<String> _routes = [
-    '/',
-    '/events',
-    '/associations',
-    '/messages',
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    context.go(_routes[index]);
-  }
+  const CustomBottomNavigationBar({
+    super.key,
+    required this.currentIndex,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,11 +17,13 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
       backgroundColor: theme.primaryColor,
-      currentIndex: _selectedIndex,
+      currentIndex: currentIndex,
       selectedItemColor: theme.colorScheme.secondary,
       unselectedItemColor: Colors.white,
       showUnselectedLabels: true,
-      onTap: _onItemTapped,
+      onTap: (index) {
+        onTap(index);
+      },
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home_rounded),

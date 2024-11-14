@@ -1,5 +1,3 @@
-import 'package:challenge_flutter/widgets/global/custom_app_bar.dart';
-import 'package:challenge_flutter/widgets/global/custom_bottom_navigation_bar.dart';
 import 'package:challenge_flutter/widgets/home/association_card_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -54,10 +52,6 @@ class _AssociationsScreenState extends State<AssociationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(
-        userName: 'John Doe',
-        pageTitle: 'Associations',
-      ),
       body: Column(
         children: [
           Padding(
@@ -96,7 +90,6 @@ class _AssociationsScreenState extends State<AssociationsScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: const CustomBottomNavigationBar(),
     );
   }
 }

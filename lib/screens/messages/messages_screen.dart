@@ -1,5 +1,3 @@
-import 'package:challenge_flutter/widgets/global/custom_app_bar.dart';
-import 'package:challenge_flutter/widgets/global/custom_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -30,10 +28,6 @@ class MessagesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(
-        userName: 'John Doe',
-        pageTitle: 'Messages',
-      ),
       body: ListView.separated(
         padding: const EdgeInsets.symmetric(vertical: 10),
         itemCount: _associations.length,
@@ -97,7 +91,6 @@ class MessagesScreen extends StatelessWidget {
           thickness: 0.5,
         ),
       ),
-      bottomNavigationBar: const CustomBottomNavigationBar(),
     );
   }
 }

@@ -1,16 +1,13 @@
+import 'package:challenge_flutter/screens/layout/main_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
 import 'providers/user_provider.dart';
-import 'screens/home/home_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
-import 'screens/events/events_screen.dart';
 import 'screens/events/event_detail_screen.dart';
-import 'screens/associations/associations_screen.dart';
 import 'screens/associations/association_detail_screen.dart';
-import 'screens/messages/messages_screen.dart';
 import 'screens/messages/message_detail_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/associations/join_association_screen.dart';
@@ -25,7 +22,7 @@ final GoRouter _router = GoRouter(
       path: '/',
       pageBuilder: (BuildContext context, GoRouterState state) =>
           const MaterialPage(
-        child: HomeScreen(),
+        child: MainLayout(initialIndex: 0),
       ),
       routes: <RouteBase>[
         GoRoute(
@@ -46,7 +43,7 @@ final GoRouter _router = GoRouter(
           path: 'events',
           pageBuilder: (BuildContext context, GoRouterState state) =>
               const MaterialPage(
-            child: EventScreen(),
+            child: MainLayout(initialIndex: 1),
           ),
           routes: <RouteBase>[
             GoRoute(
@@ -63,7 +60,7 @@ final GoRouter _router = GoRouter(
           path: 'associations',
           pageBuilder: (BuildContext context, GoRouterState state) =>
               const MaterialPage(
-            child: AssociationsScreen(),
+            child: MainLayout(initialIndex: 2),
           ),
           routes: <RouteBase>[
             GoRoute(
@@ -79,8 +76,8 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: 'messages',
           pageBuilder: (BuildContext context, GoRouterState state) =>
-              MaterialPage(
-            child: MessagesScreen(),
+              const MaterialPage(
+            child: MainLayout(initialIndex: 3),
           ),
           routes: <RouteBase>[
             GoRoute(

@@ -1,5 +1,3 @@
-import 'package:challenge_flutter/widgets/global/custom_app_bar.dart';
-import 'package:challenge_flutter/widgets/global/custom_bottom_navigation_bar.dart';
 import 'package:challenge_flutter/widgets/home/event_card_widget.dart';
 import 'package:challenge_flutter/widgets/home/stat_card_widget.dart';
 import 'package:challenge_flutter/widgets/home/top_association_card.dart';
@@ -66,10 +64,6 @@ class HomeScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      appBar: const CustomAppBar(
-        userName: 'John Doe',
-        pageTitle: 'Home',
-      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -173,7 +167,6 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: const CustomBottomNavigationBar(),
     );
   }
 }
