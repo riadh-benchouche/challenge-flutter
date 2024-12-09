@@ -28,8 +28,8 @@ class AssociationCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      elevation: 4,
-      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
@@ -42,7 +42,7 @@ class AssociationCard extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
               child: Image.asset(
                 imageSrc,
-                height: 200,
+                height: 210,
                 fit: BoxFit.cover,
               ),
             ),
@@ -58,7 +58,7 @@ class AssociationCard extends StatelessWidget {
                       color: theme.primaryColor,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 3),
                   Text(
                     description,
                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -91,15 +91,20 @@ class AssociationCard extends StatelessWidget {
                     children: [
                       _buildStatCard(
                         theme: theme,
-                        icon: Icons.person,
-                        label: 'Membres',
-                        count: userCount,
-                      ),
-                      _buildStatCard(
-                        theme: theme,
                         icon: Icons.event,
                         label: 'Événements',
                         count: eventCount,
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildStatCard(
+                        theme: theme,
+                        icon: Icons.person,
+                        label: 'Membres',
+                        count: userCount,
                       ),
                     ],
                   ),

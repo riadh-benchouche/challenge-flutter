@@ -13,10 +13,39 @@ import 'screens/profile/profile_screen.dart';
 import 'screens/associations/join_association_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 final GoRouter _router = GoRouter(
+  redirect: (BuildContext context, GoRouterState state) {
+    // Accès au UserProvider pour vérifier si l'utilisateur est connecté
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final isLoggedIn = userProvider.isLoggedIn;
+
+    // Chemins publics (login et register)
+    final isPublicRoute =
+        state.uri.toString() == '/login' || state.uri.toString() == '/register';
+
+    // Rediriger si non connecté et la route est privée
+    if (!isLoggedIn && !isPublicRoute) {
+      return '/login';
+    }
+
+    // Si connecté et essaye d'accéder à login/register, rediriger vers home
+    if (isLoggedIn && isPublicRoute) {
+      return '/';
+    }
+
+    // Pas de redirection nécessaire
+    return null;
+  },
   routes: <RouteBase>[
     GoRoute(
       path: '/',
