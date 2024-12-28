@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:challenge_flutter/providers/user_provider.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key, required this.controller});
@@ -11,9 +13,88 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passController = TextEditingController();
   final TextEditingController _repassController = TextEditingController();
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureRePassword = true;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passController.dispose();
+    _repassController.dispose();
+    super.dispose();
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer votre email';
+    }
+    if (!value.contains('@')) {
+      return 'Veuillez entrer un email valide';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer votre mot de passe';
+    }
+    if (value.length < 6) {
+      return 'Le mot de passe doit contenir au moins 6 caractères';
+    }
+    return null;
+  }
+
+  String? _validateRePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez confirmer votre mot de passe';
+    }
+    if (value != _passController.text) {
+      return 'Les mots de passe ne correspondent pas';
+    }
+    return null;
+  }
+
+  void _handleSignup() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      await userProvider.register(
+        _emailController.text.trim(),
+        _passController.text.trim(),
+      );
+
+      if (mounted && userProvider.isLoggedIn) {
+        context.go('/');
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,143 +102,129 @@ class _SignupScreenState extends State<SignupScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 0),
-            child: Image.asset(
-              "assets/images/vector-2.png",
-              width: 428,
-              height: 457,
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 0),
+              child: Image.asset(
+                "assets/images/vector-2.png",
+                width: 428,
+                height: 457,
+              ),
             ),
-          ),
-          const SizedBox(height: 18),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 50),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Inscription',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    color: theme.primaryColor,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 40),
-                SizedBox(
-                  height: 56,
-                  child: TextField(
-                    controller: _emailController,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF393939),
-                    ),
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      labelStyle:
-                          theme.inputDecorationTheme.labelStyle?.copyWith(
-                        color: theme.primaryColor,
-                      ),
-                      enabledBorder: theme.inputDecorationTheme.enabledBorder,
-                      focusedBorder:
-                          theme.inputDecorationTheme.focusedBorder?.copyWith(
-                        borderSide:
-                            BorderSide(color: theme.colorScheme.secondary),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 17),
-                SizedBox(
-                  height: 56,
-                  child: TextField(
-                    controller: _passController,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF393939),
-                    ),
-                    decoration: InputDecoration(
-                      labelText: 'Mot de passe',
-                      labelStyle:
-                          theme.inputDecorationTheme.labelStyle?.copyWith(
-                        color: theme.primaryColor,
-                      ),
-                      enabledBorder: theme.inputDecorationTheme.enabledBorder,
-                      focusedBorder:
-                          theme.inputDecorationTheme.focusedBorder?.copyWith(
-                        borderSide:
-                            BorderSide(color: theme.colorScheme.secondary),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 17),
-                SizedBox(
-                  height: 56,
-                  child: TextField(
-                    controller: _repassController,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF393939),
-                    ),
-                    decoration: InputDecoration(
-                      labelText: 'Confirmation Mot de passe',
-                      labelStyle:
-                          theme.inputDecorationTheme.labelStyle?.copyWith(
-                        color: theme.primaryColor,
-                      ),
-                      enabledBorder: theme.inputDecorationTheme.enabledBorder,
-                      focusedBorder:
-                          theme.inputDecorationTheme.focusedBorder?.copyWith(
-                        borderSide:
-                            BorderSide(color: theme.colorScheme.secondary),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 25),
-                ClipRRect(
-                  borderRadius: const BorderRadius.all(Radius.circular(10)),
-                  child: SizedBox(
-                    width: 329,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: () => context.go('/'),
-                      style: theme.elevatedButtonTheme.style,
-                      child: const Text('Créer un compte',
-                          style: TextStyle(
-                            color: Colors.white,
-                          )),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 15),
-                Row(
+            const SizedBox(height: 18),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 50),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Vous avez déjà un compte?',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF837E93),
+                      'Inscription',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: theme.primaryColor,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(width: 2.5),
-                    InkWell(
-                      onTap: () => context.go('/login'),
-                      child: Text(
-                        'Connectez-vous',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.primaryColor,
-                        ),
+                    const SizedBox(height: 40),
+                    TextFormField(
+                      controller: _emailController,
+                      validator: _validateEmail,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: const Icon(Icons.email),
+                        labelStyle: theme.inputDecorationTheme.labelStyle,
                       ),
+                    ),
+                    const SizedBox(height: 17),
+                    TextFormField(
+                      controller: _passController,
+                      validator: _validatePassword,
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        labelText: 'Mot de passe',
+                        prefixIcon: const Icon(Icons.lock),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                        labelStyle: theme.inputDecorationTheme.labelStyle,
+                      ),
+                    ),
+                    const SizedBox(height: 17),
+                    TextFormField(
+                      controller: _repassController,
+                      validator: _validateRePassword,
+                      obscureText: _obscureRePassword,
+                      decoration: InputDecoration(
+                        labelText: 'Confirmation du mot de passe',
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureRePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscureRePassword = !_obscureRePassword;
+                            });
+                          },
+                        ),
+                        labelStyle: theme.inputDecorationTheme.labelStyle,
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : ElevatedButton(
+                              onPressed: _handleSignup,
+                              child: const Text('Créer un compte'),
+                            ),
+                    ),
+                    const SizedBox(height: 15),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Vous avez déjà un compte? ',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        TextButton(
+                          onPressed: () => context.go('/login'),
+                          child: Text(
+                            'Connectez-vous',
+                            style: TextStyle(color: theme.primaryColor),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

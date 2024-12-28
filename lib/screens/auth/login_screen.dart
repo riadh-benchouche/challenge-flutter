@@ -1,7 +1,7 @@
-import 'package:challenge_flutter/providers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:challenge_flutter/providers/user_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.controller});
@@ -13,46 +13,73 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passController.dispose();
+    super.dispose();
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer votre email';
+    }
+    if (!value.contains('@')) {
+      return 'Veuillez entrer un email valide';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer votre mot de passe';
+    }
+    if (value.length < 6) {
+      return 'Le mot de passe doit contenir au moins 6 caractères';
+    }
+    return null;
+  }
 
   void _handleLogin() async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() {
-      _isLoading = true; // Affiche un indicateur de chargement
+      _isLoading = true;
     });
 
     try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
       await userProvider.login(
         _emailController.text.trim(),
         _passController.text.trim(),
       );
 
-      // Si la connexion est réussie, redirige vers la page d'accueil
-      if (userProvider.isLoggedIn) {
+      if (mounted && userProvider.isLoggedIn) {
         context.go('/');
       }
     } catch (error) {
-      // Affiche une erreur si la connexion échoue
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Erreur'),
-          content: Text(error.toString()),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
-      setState(() {
-        _isLoading = false; // Masque l'indicateur de chargement
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -62,115 +89,106 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 15, top: 15),
-            child: Image.asset(
-              "assets/images/vector-3.png",
-              width: 413,
-              height: 457,
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 15, top: 15),
+              child: Image.asset(
+                "assets/images/vector-3.png",
+                width: 413,
+                height: 457,
+              ),
             ),
-          ),
-          const SizedBox(height: 18),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 50),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Connexion',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    color: theme.primaryColor,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 50),
-                TextField(
-                  controller: _emailController,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF393939),
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    labelStyle: theme.inputDecorationTheme.labelStyle,
-                    enabledBorder: theme.inputDecorationTheme.enabledBorder,
-                    focusedBorder: theme.inputDecorationTheme.focusedBorder,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                TextField(
-                  controller: _passController,
-                  textAlign: TextAlign.center,
-                  obscureText: true,
-                  // Masque le mot de passe
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF393939),
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'Mot de passe',
-                    labelStyle: theme.inputDecorationTheme.labelStyle,
-                    enabledBorder: theme.inputDecorationTheme.enabledBorder,
-                    focusedBorder: theme.inputDecorationTheme.focusedBorder,
-                  ),
-                ),
-                const SizedBox(height: 25),
-                _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(),
-                      )
-                    : ClipRRect(
-                        borderRadius:
-                            const BorderRadius.all(Radius.circular(10)),
-                        child: SizedBox(
-                          width: 329,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: _handleLogin,
-                            style: theme.elevatedButtonTheme.style,
-                            child: const Text(
-                              'Connexion',
-                              style: TextStyle(
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                const SizedBox(height: 15),
-                Row(
+            const SizedBox(height: 18),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 50),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Vous n\'avez pas de compte?',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF837E93),
+                      'Connexion',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: theme.primaryColor,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(width: 2.5),
-                    InkWell(
-                      onTap: () => context.go('/signup'),
-                      child: Text(
-                        'Crée en un',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.primaryColor,
-                        ),
+                    const SizedBox(height: 50),
+                    TextFormField(
+                      controller: _emailController,
+                      validator: _validateEmail,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: const Icon(Icons.email),
+                        labelStyle: theme.inputDecorationTheme.labelStyle,
                       ),
+                    ),
+                    const SizedBox(height: 30),
+                    TextFormField(
+                      controller: _passController,
+                      validator: _validatePassword,
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        labelText: 'Mot de passe',
+                        prefixIcon: const Icon(Icons.lock),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                        labelStyle: theme.inputDecorationTheme.labelStyle,
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : ElevatedButton(
+                              onPressed: _handleLogin,
+                              child: const Text('Connexion'),
+                            ),
+                    ),
+                    const SizedBox(height: 15),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Vous n\'avez pas de compte? ',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        TextButton(
+                          onPressed: () => context.go('/register'),
+                          child: Text(
+                            'Créer un compte',
+                            style: TextStyle(color: theme.primaryColor),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 15),
-                Text(
-                  'Mot de passe oublié?',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.primaryColor,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
