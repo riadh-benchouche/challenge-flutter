@@ -40,7 +40,7 @@ class AssociationCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: Image.asset(
+              child: Image.network(
                 imageSrc,
                 height: 210,
                 fit: BoxFit.cover,

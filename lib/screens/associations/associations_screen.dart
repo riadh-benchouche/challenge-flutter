@@ -1,5 +1,8 @@
-import 'package:challenge_flutter/widgets/home/association_card_widget.dart';
+import 'package:challenge_flutter/models/association.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:challenge_flutter/providers/association_provider.dart';
+import 'package:challenge_flutter/widgets/home/association_card_widget.dart';
 
 class AssociationsScreen extends StatefulWidget {
   const AssociationsScreen({super.key});
@@ -9,44 +12,26 @@ class AssociationsScreen extends StatefulWidget {
 }
 
 class _AssociationsScreenState extends State<AssociationsScreen> {
-  List<Map<String, dynamic>> associations = [
-    {
-      'id': '1',
-      'name': 'Association A',
-      'imageSrc': 'assets/images/association-1.jpg',
-      'userCount': 150,
-      'eventCount': 10,
-      'description': 'A great community for health and wellness.',
-      'isActive': true,
-    },
-    {
-      'id': '2',
-      'name': 'Association B',
-      'imageSrc': 'assets/images/association-1.jpg',
-      'userCount': 200,
-      'eventCount': 15,
-      'description': 'Fostering youth through music and art.',
-      'isActive': false,
-    },
-  ];
-
-  List<Map<String, dynamic>> filteredAssociations = [];
+  String _searchQuery = '';
+  late Future<List<Association>> _associationsFuture;
 
   @override
   void initState() {
     super.initState();
-    filteredAssociations = associations;
+    _loadAssociations();
   }
 
-  void _filterAssociations(String query) {
-    final results = associations.where((association) {
-      final name = association['name'] as String;
-      return name.toLowerCase().contains(query.toLowerCase());
-    }).toList();
+  void _loadAssociations() {
+    final associationProvider = Provider.of<AssociationProvider>(context, listen: false);
+    _associationsFuture = associationProvider.fetchAssociations();
+  }
 
-    setState(() {
-      filteredAssociations = results;
-    });
+  List<Association> _filterAssociations(List<Association> associations, String query) {
+    if (query.isEmpty) return associations;
+    return associations.where((association) {
+      return association.name.toLowerCase().contains(query.toLowerCase()) ||
+          association.description.toLowerCase().contains(query.toLowerCase());
+    }).toList();
   }
 
   @override
@@ -57,9 +42,11 @@ class _AssociationsScreenState extends State<AssociationsScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: TextField(
-              onChanged: _filterAssociations,
+              onChanged: (value) {
+                setState(() => _searchQuery = value);
+              },
               decoration: InputDecoration(
-                hintText: 'Search associations...',
+                hintText: 'Rechercher des associations...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -68,22 +55,68 @@ class _AssociationsScreenState extends State<AssociationsScreen> {
             ),
           ),
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 1,
-              ),
-              itemCount: filteredAssociations.length,
-              itemBuilder: (context, index) {
-                final association = filteredAssociations[index];
-                return AssociationCard(
-                  associationId: association['id'] as String,
-                  associationName: association['name'] as String,
-                  imageSrc: association['imageSrc'] as String,
-                  userCount: association['userCount'] as int,
-                  eventCount: association['eventCount'] as int,
-                  description: association['description'] as String,
-                  isActive: association['isActive'] as bool,
+            child: FutureBuilder<List<Association>>(
+              future: _associationsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 60, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text('Erreur: ${snapshot.error}'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _loadAssociations();
+                            });
+                          },
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(
+                    child: Text('Aucune association trouvée'),
+                  );
+                }
+
+                final filteredAssociations = _filterAssociations(snapshot.data!, _searchQuery);
+
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    _loadAssociations();
+                  },
+                  child: GridView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 1,
+                    ),
+                    itemCount: filteredAssociations.length,
+                    itemBuilder: (context, index) {
+                      final association = filteredAssociations[index];
+                      return AssociationCard(
+                        associationId: association.id,
+                        associationName: association.name,
+                        imageSrc: association.imageUrl == ''
+                            ? 'https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png'
+                            : association.imageUrl,
+                        userCount: 12,
+                        eventCount: 13,
+                        description: association.description,
+                        isActive: association.isActive,
+                      );
+                    },
+                  ),
                 );
               },
             ),
