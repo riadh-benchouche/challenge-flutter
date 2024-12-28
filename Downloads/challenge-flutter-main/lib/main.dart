@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import 'screens/home/home_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/events/events_screen.dart';
+import 'screens/associations/associations_list_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,19 +23,24 @@ final GoRouter _router = GoRouter(
       },
       routes: <RouteBase>[
         GoRoute(
-          path: '/login',
+          path: 'login',
           builder: (BuildContext context, GoRouterState state) =>
               LoginScreen(controller: PageController()),
         ),
         GoRoute(
-          path: '/signup',
+          path: 'signup',
           builder: (BuildContext context, GoRouterState state) =>
               SignupScreen(controller: PageController()),
         ),
         GoRoute(
-          path: '/events',
+          path: 'events',
           builder: (BuildContext context, GoRouterState state) =>
-              const EventScreen(),
+          const EventScreen(),
+        ),
+        GoRoute(
+          path: 'associations',
+          builder: (BuildContext context, GoRouterState state) =>
+          const AssociationsListScreen(),
         ),
       ],
     ),
