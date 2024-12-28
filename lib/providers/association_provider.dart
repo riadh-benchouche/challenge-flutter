@@ -36,7 +36,6 @@ class AssociationProvider with ChangeNotifier {
       return _associations!;
     } catch (error) {
       if (error.toString().contains('Session expirée')) {
-        // Déconnexion de l'utilisateur
         await userProvider.logout();
       }
       throw error;
@@ -45,12 +44,16 @@ class AssociationProvider with ChangeNotifier {
 
   Future<Association> fetchAssociationById(String id) async {
     try {
-      _initApiService();
+      debugPrint('Fetching association with id: $id');
+      debugPrint('Token: ${userProvider.token}');
 
-      // _currentAssociation = await _apiService.getAssociationById(id);
+      _initApiService();
+      final association = await _apiService.getAssociationById(id);
+      _currentAssociation = association;
       notifyListeners();
-      return _currentAssociation!;
+      return association;
     } catch (error) {
+      debugPrint('Error fetching association: $error');
       if (error.toString().contains('Session expirée')) {
         await userProvider.logout();
       }
