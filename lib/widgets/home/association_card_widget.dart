@@ -41,9 +41,17 @@ class AssociationCard extends StatelessWidget {
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
               child: Image.network(
-                imageSrc,
+                'http://10.0.2.2:3000/$imageSrc',
                 height: 210,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Image.asset(
+                    'assets/images/association-1.jpg',
+                    height: 210,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  );
+                },
               ),
             ),
             Padding(

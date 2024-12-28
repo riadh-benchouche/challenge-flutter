@@ -86,9 +86,7 @@ class _AssociationDetailScreenState extends State<AssociationDetailScreen> {
                   borderRadius:
                       const BorderRadius.vertical(bottom: Radius.circular(0)),
                   child: Image.network(
-                    association.imageUrl == ''
-                        ? 'https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png'
-                        : association.imageUrl,
+                    'http://10.0.2.2:3000/${association.imageUrl}',
                     height: 380,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -136,9 +134,8 @@ class _AssociationDetailScreenState extends State<AssociationDetailScreen> {
                             const TextStyle(fontSize: 16, color: Colors.grey),
                       ),
                       const SizedBox(height: 20),
-                      if (association.code != null)
-                        _buildDetailRow(
-                            theme, Icons.vpn_key, 'Code: ${association.code}'),
+                      _buildDetailRow(
+                          theme, Icons.vpn_key, 'Code: ${association.code}'),
                       const SizedBox(height: 10),
                       _buildDetailRow(theme, Icons.group,
                           'Membres: 11'),
