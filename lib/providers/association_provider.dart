@@ -75,14 +75,18 @@ class AssociationProvider with ChangeNotifier {
   Future<void> joinAssociation(String code) async {
     try {
       _initApiService();
+      debugPrint('Joining association with code: $code');
 
-      // await _apiService.joinAssociation(code);
-      await fetchAssociations(); // Rafraîchir la liste
+      await _apiService.joinAssociation(code);
+      // Rafraîchir les associations après avoir rejoint
+      await fetchAssociationByUser();
+      notifyListeners();
     } catch (error) {
+      debugPrint('Error joining association: $error');
       if (error.toString().contains('Session expirée')) {
         await userProvider.logout();
       }
-      throw error;
+      rethrow;
     }
   }
 }
