@@ -23,14 +23,25 @@ class AssociationProvider with ChangeNotifier {
   List<Association>? get associations => _associations;
   Association? get currentAssociation => _currentAssociation;
 
+  Future<List<Association>> fetchAssociationByUser() async {
+    try {
+      _initApiService();
+      _associations = (await _apiService.getAssociationsByUser(userProvider.userData!['id'])) as List<Association>?;
+      notifyListeners();
+      debugPrint('Associations: $_associations');
+      return _associations!;
+    } catch (error) {
+      if (error.toString().contains('Session expirée')) {
+        await userProvider.logout();
+      }
+      rethrow;
+    }
+  }
+
   Future<List<Association>> fetchAssociations() async {
     try {
       // Réinitialiser le service API pour avoir le dernier token
       _initApiService();
-
-      print('Fetching associations...');
-      print('Token: ${userProvider.token}');
-
       _associations = await _apiService.getAssociations();
       notifyListeners();
       return _associations!;

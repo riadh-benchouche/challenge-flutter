@@ -47,8 +47,8 @@ class ApiService {
   Future<http.Response> _handleResponse(Future<http.Response> Function() request) async {
     try {
       final response = await request();
-      debugPrint('Response status: ${response.statusCode}');
-      debugPrint('Response body: ${response.body}');
+      // debugPrint('Response status: ${response.statusCode}');
+      // debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 401) {
         throw Exception('Session expirée');
@@ -58,6 +58,20 @@ class ApiService {
       debugPrint('Error in _handleResponse: $e');
       if (e is Exception) rethrow;
       throw Exception('Erreur réseau : ${e.toString()}');
+    }
+  }
+
+  Future<List<Association>> getAssociationsByUser(String userId) async {
+    debugPrint('Fetching associations for user $userId');
+    final response = await _handleResponse(() =>
+        http.get(Uri.parse('$baseUrl/users/$userId/associations'), headers: headers)
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonData = jsonDecode(response.body);
+      return jsonData.map((json) => Association.fromJson(json)).toList();
+    } else {
+      throw Exception('Échec du chargement des associations : ${response.body}');
     }
   }
 
