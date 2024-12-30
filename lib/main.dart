@@ -1,3 +1,4 @@
+import 'package:challenge_flutter/providers/event_provider.dart';
 import 'package:challenge_flutter/screens/layout/main_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -12,8 +13,12 @@ import 'screens/associations/association_detail_screen.dart';
 import 'screens/messages/message_detail_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/associations/join_association_screen.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
-void main() {
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('fr_FR', null);
   runApp(
     MultiProvider(
       providers: [
@@ -24,6 +29,13 @@ void main() {
           ),
           update: (context, userProvider, previous) =>
               AssociationProvider(userProvider: userProvider),
+        ),
+        ChangeNotifierProxyProvider<UserProvider, EventProvider>(
+          create: (context) => EventProvider(
+            userProvider: Provider.of<UserProvider>(context, listen: false),
+          ),
+          update: (context, userProvider, previous) =>
+              EventProvider(userProvider: userProvider),
         ),
       ],
       child: const MyApp(),

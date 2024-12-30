@@ -154,6 +154,7 @@ class HomeScreen extends StatelessWidget {
               Column(
                 children: events.map((event) {
                   return EventCard(
+                    eventId: '1',
                     theme: theme,
                     eventName: event['eventName']!,
                     eventDate: event['eventDate']!,
