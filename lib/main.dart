@@ -1,4 +1,5 @@
 import 'package:challenge_flutter/providers/event_provider.dart';
+import 'package:challenge_flutter/providers/home_provider.dart';
 import 'package:challenge_flutter/screens/layout/main_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,7 +15,6 @@ import 'screens/messages/message_detail_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/associations/join_association_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
-
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +36,13 @@ Future<void> main() async {
           ),
           update: (context, userProvider, previous) =>
               EventProvider(userProvider: userProvider),
+        ),
+        ChangeNotifierProxyProvider<UserProvider, HomeProvider>(
+          create: (context) => HomeProvider(
+            userProvider: Provider.of<UserProvider>(context, listen: false),
+          ),
+          update: (context, userProvider, previous) =>
+              HomeProvider(userProvider: userProvider),
         ),
       ],
       child: const MyApp(),
