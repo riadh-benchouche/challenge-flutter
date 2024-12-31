@@ -1,5 +1,6 @@
 import 'package:challenge_flutter/providers/event_provider.dart';
 import 'package:challenge_flutter/providers/home_provider.dart';
+import 'package:challenge_flutter/providers/message_provider.dart';
 import 'package:challenge_flutter/screens/layout/main_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -43,6 +44,14 @@ Future<void> main() async {
           ),
           update: (context, userProvider, previous) =>
               HomeProvider(userProvider: userProvider),
+        ),
+        ChangeNotifierProxyProvider<UserProvider, MessageProvider>(
+          create: (context) => MessageProvider(
+            userProvider: Provider.of<UserProvider>(context, listen: false),
+          ),
+          update: (context, userProvider, previous) {
+            return MessageProvider(userProvider: userProvider);
+          },
         ),
       ],
       child: const MyApp(),

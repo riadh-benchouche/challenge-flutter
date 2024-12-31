@@ -15,20 +15,23 @@ class UserProvider extends ChangeNotifier {
   }
 
   bool _isLoggedIn = false;
+
   String get baseUrl => _baseUrl;
   String? _token;
   Map<String, dynamic>? _userData;
 
   bool get isLoggedIn => _isLoggedIn;
+
   String? get token => _token;
+
   Map<String, dynamic>? get userData => _userData;
 
   // Méthode pour faire des requêtes HTTP authentifiées
   Future<http.Response> authenticatedRequest(
-      String endpoint, {
-        String method = 'GET',
-        Map<String, dynamic>? body,
-      }) async {
+    String endpoint, {
+    String method = 'GET',
+    Map<String, dynamic>? body,
+  }) async {
     final url = Uri.parse('$_baseUrl$endpoint');
 
     // Headers avec token d'authentification
@@ -74,7 +77,6 @@ class UserProvider extends ChangeNotifier {
       }
 
       return response;
-
     } catch (error) {
       throw Exception('Erreur de requête: ${error.toString()}');
     }

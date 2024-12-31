@@ -28,7 +28,6 @@ class AssociationProvider with ChangeNotifier {
       _initApiService();
       _associations = (await _apiService.getAssociationsByUser(userProvider.userData!['id'])) as List<Association>?;
       notifyListeners();
-      debugPrint('Associations: $_associations');
       return _associations!;
     } catch (error) {
       if (error.toString().contains('Session expirée')) {
