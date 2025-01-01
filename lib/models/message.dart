@@ -40,7 +40,7 @@ class Message {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
-      sender: User.fromJson(json['sender'] ?? {}),
+      sender: User.fromJson(json['user'] ?? {}),
       association: Association.fromJson(json['association'] ?? {}),
       status: MessageStatus.values.firstWhere(
             (e) => e.toString() == json['status'],

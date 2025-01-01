@@ -2,8 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserProvider extends ChangeNotifier {
+  static const String TOKEN_KEY = 'auth_token';
+  static const String USER_DATA_KEY = 'user_data';
+  static const String IS_LOGGED_IN_KEY = 'is_logged_in';
+  bool _initialized = false;
+  bool get initialized => _initialized;
+
   String get _baseUrl {
     if (Platform.isAndroid) {
       return 'http://10.0.2.2:3000';
@@ -15,26 +22,69 @@ class UserProvider extends ChangeNotifier {
   }
 
   bool _isLoggedIn = false;
-
-  String get baseUrl => _baseUrl;
   String? _token;
   Map<String, dynamic>? _userData;
 
+  String get baseUrl => _baseUrl;
   bool get isLoggedIn => _isLoggedIn;
-
   String? get token => _token;
-
   Map<String, dynamic>? get userData => _userData;
 
-  // Méthode pour faire des requêtes HTTP authentifiées
+  UserProvider();
+
+  Future<void> initializeApp() async {
+    if (!_initialized) {
+      await _loadStoredData();
+      _initialized = true;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _loadStoredData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _token = prefs.getString(TOKEN_KEY);
+      final userDataString = prefs.getString(USER_DATA_KEY);
+      _isLoggedIn = prefs.getBool(IS_LOGGED_IN_KEY) ?? false;
+
+      if (_token != null && userDataString != null) {
+        _userData = jsonDecode(userDataString);
+        _isLoggedIn = true;  // S'assurer que isLoggedIn est à true
+      }
+    } catch (e) {
+      debugPrint('Erreur lors du chargement des données: $e');
+    }
+  }
+
+  Future<void> _saveAuthData(String token, Map<String, dynamic> userData) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(TOKEN_KEY, token);
+      await prefs.setString(USER_DATA_KEY, jsonEncode(userData));
+      await prefs.setBool(IS_LOGGED_IN_KEY, true);
+    } catch (e) {
+      debugPrint('Erreur lors de la sauvegarde des données: $e');
+    }
+  }
+
+  Future<void> _clearAuthData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(TOKEN_KEY);
+      await prefs.remove(USER_DATA_KEY);
+      await prefs.remove(IS_LOGGED_IN_KEY);
+    } catch (e) {
+      debugPrint('Erreur lors de la suppression des données: $e');
+    }
+  }
+
   Future<http.Response> authenticatedRequest(
-    String endpoint, {
-    String method = 'GET',
-    Map<String, dynamic>? body,
-  }) async {
+      String endpoint, {
+        String method = 'GET',
+        Map<String, dynamic>? body,
+      }) async {
     final url = Uri.parse('$_baseUrl$endpoint');
 
-    // Headers avec token d'authentification
     final headers = {
       'Content-Type': 'application/json',
       if (_token != null) 'Authorization': 'Bearer $_token',
@@ -68,11 +118,8 @@ class UserProvider extends ChangeNotifier {
           throw Exception('Méthode HTTP non supportée: $method');
       }
 
-      // Gestion des erreurs HTTP
       if (response.statusCode == 401) {
-        _isLoggedIn = false;
-        _token = null;
-        notifyListeners();
+        await logout();
         throw Exception('Session expirée, veuillez vous reconnecter');
       }
 
@@ -98,7 +145,7 @@ class UserProvider extends ChangeNotifier {
         _token = data['token'];
         _userData = data['user'];
         _isLoggedIn = true;
-        print(_token);
+        await _saveAuthData(_token!, _userData!);
         notifyListeners();
       } else {
         final errorData = jsonDecode(response.body);
@@ -125,6 +172,7 @@ class UserProvider extends ChangeNotifier {
         _token = data['token'];
         _userData = data['user'];
         _isLoggedIn = true;
+        await _saveAuthData(_token!, _userData!);
         notifyListeners();
       } else {
         final errorData = jsonDecode(response.body);
@@ -139,6 +187,7 @@ class UserProvider extends ChangeNotifier {
     _isLoggedIn = false;
     _token = null;
     _userData = null;
+    await _clearAuthData();
     notifyListeners();
   }
 }

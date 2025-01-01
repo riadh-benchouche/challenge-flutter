@@ -20,38 +20,46 @@ import 'package:intl/date_symbol_data_local.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('fr_FR', null);
+
+  // Créer et initialiser UserProvider
+  final userProvider = UserProvider();
+  await userProvider.initializeApp();
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider.value(value: userProvider),
         ChangeNotifierProxyProvider<UserProvider, AssociationProvider>(
           create: (context) => AssociationProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
-          update: (context, userProvider, previous) =>
-              AssociationProvider(userProvider: userProvider),
+          update: (context, userProvider, previous) => userProvider.token != null
+              ? AssociationProvider(userProvider: userProvider)
+              : previous ?? AssociationProvider(userProvider: userProvider),
         ),
         ChangeNotifierProxyProvider<UserProvider, EventProvider>(
           create: (context) => EventProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
-          update: (context, userProvider, previous) =>
-              EventProvider(userProvider: userProvider),
+          update: (context, userProvider, previous) => userProvider.token != null
+              ? EventProvider(userProvider: userProvider)
+              : previous ?? EventProvider(userProvider: userProvider),
         ),
         ChangeNotifierProxyProvider<UserProvider, HomeProvider>(
           create: (context) => HomeProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
-          update: (context, userProvider, previous) =>
-              HomeProvider(userProvider: userProvider),
+          update: (context, userProvider, previous) => userProvider.token != null
+              ? HomeProvider(userProvider: userProvider)
+              : previous ?? HomeProvider(userProvider: userProvider),
         ),
         ChangeNotifierProxyProvider<UserProvider, MessageProvider>(
           create: (context) => MessageProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
-          update: (context, userProvider, previous) => previous ?? MessageProvider(
-            userProvider: userProvider,
-          ),
+          update: (context, userProvider, previous) => userProvider.token != null
+              ? MessageProvider(userProvider: userProvider)
+              : previous ?? MessageProvider(userProvider: userProvider),
         ),
       ],
       child: const MyApp(),
@@ -63,18 +71,18 @@ final GoRouter _router = GoRouter(
   redirect: (BuildContext context, GoRouterState state) {
     // Accès au UserProvider pour vérifier si l'utilisateur est connecté
     final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+    if (!userProvider.initialized) return null;
+
     final isLoggedIn = userProvider.isLoggedIn;
 
-    // Chemins publics (login et register)
     final isPublicRoute =
         state.uri.toString() == '/login' || state.uri.toString() == '/register';
 
-    // Rediriger si non connecté et la route est privée
     if (!isLoggedIn && !isPublicRoute) {
       return '/login';
     }
 
-    // Si connecté et essaye d'accéder à login/register, rediriger vers home
     if (isLoggedIn && isPublicRoute) {
       return '/';
     }
