@@ -97,7 +97,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              '${lastMessage.sender.name}: ${lastMessage.content}',
+                              lastMessage.content,
                               style: TextStyle(
                                 color: unreadCount > 0
                                     ? Colors.black87

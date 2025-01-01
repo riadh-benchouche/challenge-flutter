@@ -29,7 +29,6 @@ class MessageProvider with ChangeNotifier {
 
   void _initWebSocket() {
     _webSocketService = WebSocketService(
-      baseUrl: userProvider.baseUrl,
       token: userProvider.token ?? '',
     );
 
@@ -43,7 +42,8 @@ class MessageProvider with ChangeNotifier {
   Future<void> loadUserAssociations() async {
     try {
       final response = await http.get(
-        Uri.parse('${userProvider.baseUrl}/users/${userProvider.userData!['id']}/associations'),
+        Uri.parse(
+            '${userProvider.baseUrl}/users/${userProvider.userData!['id']}/associations'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${userProvider.token}',
@@ -147,7 +147,7 @@ class MessageProvider with ChangeNotifier {
 
   Future<void> sendMessage(String content, String associationId) async {
     final message = Message(
-      id: '',
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
       content: content,
       senderId: userProvider.userData!['id'],
       associationId: associationId,
@@ -157,24 +157,33 @@ class MessageProvider with ChangeNotifier {
       status: MessageStatus.sending,
     );
 
-    _handleNewMessage(message);
-
+    // Envoyer le message via HTTP d'abord
     try {
-      _webSocketService.sendMessage(message);
-      final index = _messages[associationId]!.indexOf(message);
-      if (index != -1) {
-        _messages[associationId]![index] =
-            message.copyWith(status: MessageStatus.sent);
+      final response = await http.post(
+        Uri.parse('${userProvider.baseUrl}/messages'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${userProvider.token}',
+        },
+        body: jsonEncode(message.toJson()),
+      );
+
+      if (response.statusCode == 201) {
+        // Une fois le message sauvegardé en BDD, on l'ajoute localement
+        if (!_messages.containsKey(associationId)) {
+          _messages[associationId] = [];
+        }
+        _messages[associationId]!.add(message);
         notifyListeners();
+
+        // Puis on le diffuse via WebSocket
+        _webSocketService.sendMessage(message);
+      } else {
+        throw Exception('Échec de l\'envoi du message');
       }
     } catch (e) {
-      final index = _messages[associationId]!.indexOf(message);
-      if (index != -1) {
-        _messages[associationId]![index] =
-            message.copyWith(status: MessageStatus.failed);
-        notifyListeners();
-      }
-      rethrow;
+      debugPrint('Erreur envoi message: $e');
+      throw Exception('Impossible d\'envoyer le message: $e');
     }
   }
 

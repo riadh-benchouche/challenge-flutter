@@ -4,7 +4,6 @@ import '../models/message.dart';
 import 'package:flutter/foundation.dart';
 
 class WebSocketService {
-  final String baseUrl;
   final String token;
   IOWebSocketChannel? _channel;
   Function(Message)? onMessageReceived;
@@ -12,24 +11,14 @@ class WebSocketService {
   Function(dynamic)? onError;
   bool _isDisposed = false;
 
-  WebSocketService({required this.baseUrl, required this.token});
-
-  String get _wsUrl {
-    // Extraction du hostname (10.0.2.2:3000) du baseUrl
-    final uri = Uri.parse(baseUrl);
-    return 'ws://${uri.host}:${uri.port}/ws';
-  }
+  WebSocketService({required this.token});
 
   void connect() {
     if (_isDisposed) return;  // Ne pas se reconnecter si disposé
 
     try {
-      debugPrint('Tentative de connexion WebSocket...');
-      final uri = Uri.parse(_wsUrl);
-      debugPrint('URL WebSocket: $uri');
-
       _channel = IOWebSocketChannel.connect(
-        uri,
+        'ws://10.0.2.2:3000/ws',
         headers: {
           'Authorization': 'Bearer $token',
         },

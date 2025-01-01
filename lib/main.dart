@@ -49,9 +49,9 @@ Future<void> main() async {
           create: (context) => MessageProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
-          update: (context, userProvider, previous) {
-            return MessageProvider(userProvider: userProvider);
-          },
+          update: (context, userProvider, previous) => previous ?? MessageProvider(
+            userProvider: userProvider,
+          ),
         ),
       ],
       child: const MyApp(),
