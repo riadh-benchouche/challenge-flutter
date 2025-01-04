@@ -1,6 +1,7 @@
 import 'package:challenge_flutter/providers/event_provider.dart';
 import 'package:challenge_flutter/providers/home_provider.dart';
 import 'package:challenge_flutter/providers/message_provider.dart';
+import 'package:challenge_flutter/screens/associations/create_association_screen.dart';
 import 'package:challenge_flutter/screens/layout/main_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -33,25 +34,28 @@ Future<void> main() async {
           create: (context) => AssociationProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
-          update: (context, userProvider, previous) => userProvider.token != null
-              ? AssociationProvider(userProvider: userProvider)
-              : previous ?? AssociationProvider(userProvider: userProvider),
+          update: (context, userProvider, previous) =>
+              userProvider.token != null
+                  ? AssociationProvider(userProvider: userProvider)
+                  : previous ?? AssociationProvider(userProvider: userProvider),
         ),
         ChangeNotifierProxyProvider<UserProvider, EventProvider>(
           create: (context) => EventProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
-          update: (context, userProvider, previous) => userProvider.token != null
-              ? EventProvider(userProvider: userProvider)
-              : previous ?? EventProvider(userProvider: userProvider),
+          update: (context, userProvider, previous) =>
+              userProvider.token != null
+                  ? EventProvider(userProvider: userProvider)
+                  : previous ?? EventProvider(userProvider: userProvider),
         ),
         ChangeNotifierProxyProvider<UserProvider, HomeProvider>(
           create: (context) => HomeProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
-          update: (context, userProvider, previous) => userProvider.token != null
-              ? HomeProvider(userProvider: userProvider)
-              : previous ?? HomeProvider(userProvider: userProvider),
+          update: (context, userProvider, previous) =>
+              userProvider.token != null
+                  ? HomeProvider(userProvider: userProvider)
+                  : previous ?? HomeProvider(userProvider: userProvider),
         ),
         ChangeNotifierProxyProvider<UserProvider, MessageProvider>(
           create: (context) => MessageProvider(
@@ -136,6 +140,13 @@ final GoRouter _router = GoRouter(
             child: MainLayout(initialIndex: 2),
           ),
           routes: <RouteBase>[
+            GoRoute(
+              path: 'create-association',
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+              const MaterialPage(
+                child: CreateAssociationScreen(),
+              ),
+            ),
             GoRoute(
               path: ':associationId',
               pageBuilder: (BuildContext context, GoRouterState state) =>

@@ -147,6 +147,8 @@ class UserProvider extends ChangeNotifier {
         _isLoggedIn = true;
         await _saveAuthData(_token!, _userData!);
         notifyListeners();
+
+        // Pas de navigation ici - elle sera gérée dans le LoginScreen
       } else {
         final errorData = jsonDecode(response.body);
         throw Exception(errorData['message'] ?? 'Échec de la connexion');

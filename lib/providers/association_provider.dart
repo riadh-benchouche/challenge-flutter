@@ -88,4 +88,24 @@ class AssociationProvider with ChangeNotifier {
       rethrow;
     }
   }
+
+  Future<Association> createAssociation(String name, String description) async {
+    try {
+      _initApiService();
+      final association = await _apiService.createAssociation(name, description);
+      // Rafraîchir la liste des associations après la création
+      await fetchAssociations();
+      notifyListeners();
+      return association;
+    } catch (error) {
+      if (error.toString().contains('Session expirée')) {
+        await userProvider.logout();
+      }
+      rethrow;
+    }
+  }
+
+  bool get canCreateAssociation {
+    return userProvider.userData?['role'] == 'association_leader';
+  }
 }

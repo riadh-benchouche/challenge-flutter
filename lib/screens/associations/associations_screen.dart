@@ -1,5 +1,6 @@
 import 'package:challenge_flutter/models/association.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:challenge_flutter/providers/association_provider.dart';
 import 'package:challenge_flutter/widgets/home/association_card_widget.dart';
@@ -39,14 +40,16 @@ class _AssociationsScreenState extends State<AssociationsScreen>
   }
 
   Future<void> _loadAssociations() async {
-    final associationProvider = Provider.of<AssociationProvider>(context, listen: false);
+    final associationProvider =
+        Provider.of<AssociationProvider>(context, listen: false);
     setState(() {
       _myAssociationsFuture = associationProvider.fetchAssociationByUser();
       _allAssociationsFuture = associationProvider.fetchAssociations();
     });
   }
 
-  List<Association> _filterAssociations(List<Association> associations, String query) {
+  List<Association> _filterAssociations(
+      List<Association> associations, String query) {
     if (query.isEmpty) return associations;
     return associations.where((association) {
       return association.name.toLowerCase().contains(query.toLowerCase()) ||
@@ -149,7 +152,7 @@ class _AssociationsScreenState extends State<AssociationsScreen>
         if (snapshot.hasError) {
           return _buildErrorState(
             snapshot.error!,
-                () => setState(() => _loadAssociations()),
+            () => setState(() => _loadAssociations()),
           );
         }
 
@@ -157,7 +160,8 @@ class _AssociationsScreenState extends State<AssociationsScreen>
           return _buildEmptyState();
         }
 
-        final filteredAssociations = _filterAssociations(snapshot.data!, _searchQuery);
+        final filteredAssociations =
+            _filterAssociations(snapshot.data!, _searchQuery);
 
         if (filteredAssociations.isEmpty) {
           return _buildEmptyState();
@@ -195,6 +199,8 @@ class _AssociationsScreenState extends State<AssociationsScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final associationProvider =
+        Provider.of<AssociationProvider>(context); // Ajout de cette ligne
 
     return Scaffold(
       body: Column(
@@ -235,9 +241,9 @@ class _AssociationsScreenState extends State<AssociationsScreen>
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () => setState(() => _searchQuery = ''),
-                )
+                        icon: const Icon(Icons.clear),
+                        onPressed: () => setState(() => _searchQuery = ''),
+                      )
                     : null,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -258,6 +264,14 @@ class _AssociationsScreenState extends State<AssociationsScreen>
           ),
         ],
       ),
+      floatingActionButton: associationProvider.canCreateAssociation
+          ? FloatingActionButton.extended(
+              onPressed: () => context.go('/associations/create-association'),
+              backgroundColor: theme.primaryColor,
+              icon: const Icon(Icons.add),
+              label: const Text('Nouvelle association'),
+            )
+          : null,
     );
   }
 }

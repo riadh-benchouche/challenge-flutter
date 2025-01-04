@@ -126,4 +126,20 @@ class ApiService {
     throw Exception(
         'Impossible de rejoindre l\'association : ${response.body}');
   }
+  Future<Association> createAssociation(String name, String description) async {
+    final response = await _handleResponse(() => http.post(
+      Uri.parse('$baseUrl/associations'),
+      headers: headers,
+      body: jsonEncode({
+        'name': name,
+        'description': description,
+      }),
+    ));
+
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return Association.fromJson(jsonDecode(response.body));
+    }
+
+    throw Exception('Impossible de créer l\'association : ${response.body}');
+  }
 }

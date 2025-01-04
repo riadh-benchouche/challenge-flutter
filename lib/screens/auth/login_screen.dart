@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:challenge_flutter/providers/user_provider.dart';
+import 'package:challenge_flutter/providers/home_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.controller});
@@ -46,7 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  void _handleLogin() async {
+  Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -56,21 +57,45 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
+      // Récupérer les providers nécessaires
       final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final homeProvider = Provider.of<HomeProvider>(context, listen: false);
+
+      // Connecter l'utilisateur
       await userProvider.login(
         _emailController.text.trim(),
         _passController.text.trim(),
       );
 
       if (mounted && userProvider.isLoggedIn) {
-        context.go('/');
+        // Précharger les données de la home page
+        try {
+          await homeProvider.refreshAll();
+        } catch (e) {
+          debugPrint('Erreur lors du chargement des données initiales: $e');
+          // On continue quand même la navigation même si le chargement des données échoue
+        }
+
+        // Rediriger vers la home page
+        if (mounted) {
+          context.go('/');
+        }
       }
     } catch (error) {
       if (mounted) {
+        String errorMessage = error.toString();
+        // Nettoyer le message d'erreur si nécessaire
+        if (errorMessage.contains('Exception:')) {
+          errorMessage = errorMessage.replaceAll('Exception:', '').trim();
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error.toString()),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -149,17 +174,22 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         labelStyle: theme.inputDecorationTheme.labelStyle,
                       ),
+                      onFieldSubmitted: (_) => _handleLogin(),
                     ),
                     const SizedBox(height: 25),
                     SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: _isLoading
-                          ? const Center(child: CircularProgressIndicator())
+                          ? Center(
+                        child: CircularProgressIndicator(
+                          color: theme.primaryColor,
+                        ),
+                      )
                           : ElevatedButton(
-                              onPressed: _handleLogin,
-                              child: const Text('Connexion'),
-                            ),
+                        onPressed: _handleLogin,
+                        child: const Text('Connexion'),
+                      ),
                     ),
                     const SizedBox(height: 15),
                     Row(
@@ -175,10 +205,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         TextButton(
-                          onPressed: () => context.go('/register'),
+                          onPressed: _isLoading
+                              ? null
+                              : () => context.go('/register'),
                           child: Text(
                             'Créer un compte',
-                            style: TextStyle(color: theme.primaryColor),
+                            style: TextStyle(
+                              color: _isLoading
+                                  ? theme.disabledColor
+                                  : theme.primaryColor,
+                            ),
                           ),
                         ),
                       ],

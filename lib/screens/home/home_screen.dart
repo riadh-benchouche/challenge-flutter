@@ -26,6 +26,18 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadDataFuture = _loadAllData();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final homeProvider = Provider.of<HomeProvider>(context, listen: false);
+    // Si les données ne sont pas déjà chargées, les charger
+    if (homeProvider.statistics == null ||
+        homeProvider.topAssociations == null ||
+        homeProvider.recentEvents == null) {
+      _loadDataFuture = _loadAllData();
+    }
+  }
+
   Future<void> _loadAllData() async {
     final homeProvider = Provider.of<HomeProvider>(context, listen: false);
     try {
