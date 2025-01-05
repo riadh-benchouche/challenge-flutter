@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class UserProvider extends ChangeNotifier {
   static const String TOKEN_KEY = 'auth_token';
@@ -12,12 +13,14 @@ class UserProvider extends ChangeNotifier {
   bool get initialized => _initialized;
 
   String get _baseUrl {
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:3000';
+    if (kIsWeb) {
+      return 'http://localhost:3000'; // URL de l'API pour le Web
+    } else if (Platform.isAndroid) {
+      return 'http://10.0.2.2:3000'; // URL de l'API pour l'émulateur Android
     } else if (Platform.isIOS) {
-      return 'http://127.0.0.1:3000';
+      return 'http://127.0.0.1:3000'; // URL de l'API pour l'émulateur iOS
     } else {
-      return 'http://localhost:3000';
+      return 'http://localhost:3000'; // Autres plateformes (desktop)
     }
   }
 
@@ -49,14 +52,15 @@ class UserProvider extends ChangeNotifier {
 
       if (_token != null && userDataString != null) {
         _userData = jsonDecode(userDataString);
-        _isLoggedIn = true;  // S'assurer que isLoggedIn est à true
+        _isLoggedIn = true; // S'assurer que isLoggedIn est à true
       }
     } catch (e) {
       debugPrint('Erreur lors du chargement des données: $e');
     }
   }
 
-  Future<void> _saveAuthData(String token, Map<String, dynamic> userData) async {
+  Future<void> _saveAuthData(
+      String token, Map<String, dynamic> userData) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(TOKEN_KEY, token);
@@ -79,10 +83,10 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<http.Response> authenticatedRequest(
-      String endpoint, {
-        String method = 'GET',
-        Map<String, dynamic>? body,
-      }) async {
+    String endpoint, {
+    String method = 'GET',
+    Map<String, dynamic>? body,
+  }) async {
     final url = Uri.parse('$_baseUrl$endpoint');
 
     final headers = {
