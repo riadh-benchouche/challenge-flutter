@@ -109,6 +109,25 @@ class EventService {
     }
   }
 
+  Future<bool> checkEventParticipation(String eventId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/events/$eventId/is-attended'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['is_attended'] ?? false;
+      } else {
+        throw Exception('Impossible de vérifier la participation');
+      }
+    } catch (e) {
+      debugPrint('Error in checkEventParticipation: $e');
+      rethrow;
+    }
+  }
+
   Future<void> toggleEventParticipation(String eventId, bool isAttending) async {
     try {
       final response = await http.post(
@@ -120,9 +139,15 @@ class EventService {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['is_attending'] != isAttending) {
-          throw Exception('Erreur lors de la mise à jour de la participation');
+        if (isAttending) {
+          // Si on s'inscrit, on vérifie que la participation a été créée
+          final data = jsonDecode(response.body);
+          if (data == null || data['is_attending'] != isAttending) {
+            throw Exception('Erreur lors de l\'inscription à l\'événement');
+          }
+        } else {
+          // Si on se désinscrit, response.body sera null ou vide, c'est normal
+          // Pas besoin de vérification supplémentaire
         }
       } else {
         throw Exception(isAttending
@@ -165,7 +190,8 @@ class EventService {
     required String location,
     required String categoryId,
     required String associationId,
-  }) async {
+  }) async
+  {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/events'),

@@ -80,6 +80,20 @@ class EventProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> checkParticipation(String eventId) async {
+    try {
+      _initEventService();
+      return await _eventService.checkEventParticipation(eventId);
+    } catch (error) {
+      if (error.toString().contains('Session expirée')) {
+        await userProvider.logout();
+      }
+      rethrow;
+    }
+  }
+
+
+
   Future<void> toggleParticipation(String eventId, bool isAttending) async {
     try {
       _initEventService();
