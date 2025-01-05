@@ -1,20 +1,142 @@
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class UserProvider extends ChangeNotifier {
-  bool _isLoggedIn = false;
-  String? _token; // Pour stocker le token d'authentification
-  String? _userId; // Pour stocker l'ID de l'utilisateur
+  static const String TOKEN_KEY = 'auth_token';
+  static const String USER_DATA_KEY = 'user_data';
+  static const String IS_LOGGED_IN_KEY = 'is_logged_in';
+  bool _initialized = false;
+  bool get initialized => _initialized;
 
+  String get _baseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:3000'; // URL de l'API pour le Web
+    } else if (Platform.isAndroid) {
+      return 'http://10.0.2.2:3000'; // URL de l'API pour l'émulateur Android
+    } else if (Platform.isIOS) {
+      return 'http://127.0.0.1:3000'; // URL de l'API pour l'émulateur iOS
+    } else {
+      return 'http://localhost:3000'; // Autres plateformes (desktop)
+    }
+  }
+
+  bool _isLoggedIn = false;
+  String? _token;
+  Map<String, dynamic>? _userData;
+
+  String get baseUrl => _baseUrl;
   bool get isLoggedIn => _isLoggedIn;
   String? get token => _token;
+  Map<String, dynamic>? get userData => _userData;
+
+  UserProvider();
+
+  Future<void> initializeApp() async {
+    if (!_initialized) {
+      await _loadStoredData();
+      _initialized = true;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _loadStoredData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _token = prefs.getString(TOKEN_KEY);
+      final userDataString = prefs.getString(USER_DATA_KEY);
+      _isLoggedIn = prefs.getBool(IS_LOGGED_IN_KEY) ?? false;
+
+      if (_token != null && userDataString != null) {
+        _userData = jsonDecode(userDataString);
+        _isLoggedIn = true; // S'assurer que isLoggedIn est à true
+      }
+    } catch (e) {
+      debugPrint('Erreur lors du chargement des données: $e');
+    }
+  }
+
+  Future<void> _saveAuthData(
+      String token, Map<String, dynamic> userData) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(TOKEN_KEY, token);
+      await prefs.setString(USER_DATA_KEY, jsonEncode(userData));
+      await prefs.setBool(IS_LOGGED_IN_KEY, true);
+    } catch (e) {
+      debugPrint('Erreur lors de la sauvegarde des données: $e');
+    }
+  }
+
+  Future<void> _clearAuthData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(TOKEN_KEY);
+      await prefs.remove(USER_DATA_KEY);
+      await prefs.remove(IS_LOGGED_IN_KEY);
+    } catch (e) {
+      debugPrint('Erreur lors de la suppression des données: $e');
+    }
+  }
+
+  Future<http.Response> authenticatedRequest(
+    String endpoint, {
+    String method = 'GET',
+    Map<String, dynamic>? body,
+  }) async {
+    final url = Uri.parse('$_baseUrl$endpoint');
+
+    final headers = {
+      'Content-Type': 'application/json',
+      if (_token != null) 'Authorization': 'Bearer $_token',
+    };
+
+    try {
+      http.Response response;
+
+      switch (method) {
+        case 'GET':
+          response = await http.get(url, headers: headers);
+          break;
+        case 'POST':
+          response = await http.post(
+            url,
+            headers: headers,
+            body: body != null ? jsonEncode(body) : null,
+          );
+          break;
+        case 'PUT':
+          response = await http.put(
+            url,
+            headers: headers,
+            body: body != null ? jsonEncode(body) : null,
+          );
+          break;
+        case 'DELETE':
+          response = await http.delete(url, headers: headers);
+          break;
+        default:
+          throw Exception('Méthode HTTP non supportée: $method');
+      }
+
+      if (response.statusCode == 401) {
+        await logout();
+        throw Exception('Session expirée, veuillez vous reconnecter');
+      }
+
+      return response;
+    } catch (error) {
+      throw Exception('Erreur de requête: ${error.toString()}');
+    }
+  }
 
   Future<void> login(String email, String password) async {
-    final url = Uri.parse('https://example.com/api/login');
     try {
       final response = await http.post(
-        url,
+        Uri.parse('$_baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -25,43 +147,53 @@ class UserProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         _token = data['token'];
-        _userId = data['user']['id'];
+        _userData = data['user'];
         _isLoggedIn = true;
+        await _saveAuthData(_token!, _userData!);
         notifyListeners();
+
+        // Pas de navigation ici - elle sera gérée dans le LoginScreen
       } else {
-        throw Exception('Failed to login: ${response.body}');
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['message'] ?? 'Échec de la connexion');
       }
     } catch (error) {
-      rethrow; // Remontez l'erreur pour la gérer dans l'interface utilisateur
+      throw Exception('Erreur de connexion: ${error.toString()}');
+    }
+  }
+
+  Future<void> register(String email, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        _token = data['token'];
+        _userData = data['user'];
+        _isLoggedIn = true;
+        await _saveAuthData(_token!, _userData!);
+        notifyListeners();
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['message'] ?? 'Échec de l\'inscription');
+      }
+    } catch (error) {
+      throw Exception('Erreur d\'inscription: ${error.toString()}');
     }
   }
 
   Future<void> logout() async {
     _isLoggedIn = false;
     _token = null;
-    _userId = null;
+    _userData = null;
+    await _clearAuthData();
     notifyListeners();
-  }
-
-  Future<void> fetchUserProfile() async {
-    if (_token == null) return;
-
-    final url = Uri.parse('https://example.com/api/profile');
-    try {
-      final response = await http.get(
-        url,
-        headers: {'Authorization': 'Bearer $_token'},
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        // Mettez à jour les informations utilisateur si nécessaire
-        notifyListeners();
-      } else {
-        throw Exception('Failed to fetch profile: ${response.body}');
-      }
-    } catch (error) {
-      rethrow;
-    }
   }
 }

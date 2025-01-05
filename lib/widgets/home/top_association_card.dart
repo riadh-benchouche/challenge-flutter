@@ -14,46 +14,59 @@ class TopAssociationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(6),
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.asset(
-                imageSrc,
-                height: 100,
-                width: 100,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+    return SizedBox(
+      width: 180, // Largeur fixe
+      child: Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        elevation: 3,
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: imageSrc == ''
+                      ? Image.asset(
+                    'assets/images/association-1.jpg',
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  )
+                      : Image.network(
+                    'http://10.0.2.2:3000/$imageSrc',
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Image.asset(
+                        'assets/images/association-1.jpg',
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      );
+                    },
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$userCount members',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                name,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$userCount membres',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

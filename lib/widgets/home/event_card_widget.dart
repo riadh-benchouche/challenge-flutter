@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 class EventCard extends StatelessWidget {
+  final String eventId;
   final String eventName;
   final String eventDate;
   final String eventLocation;
@@ -11,6 +13,7 @@ class EventCard extends StatelessWidget {
 
   const EventCard({
     super.key,
+    required this.eventId,
     required this.eventName,
     required this.eventDate,
     required this.eventLocation,
@@ -19,8 +22,20 @@ class EventCard extends StatelessWidget {
     required this.theme,
   });
 
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final DateFormat formatter = DateFormat('dd MMMM yyyy à HH:mm', 'fr_FR');
+      return formatter.format(date);
+    } catch (e) {
+      return dateString; // Retourne la chaîne originale si le parsing échoue
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final formattedDate = _formatDate(eventDate);
+
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
@@ -30,7 +45,7 @@ class EventCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(15),
         onTap: () {
-          context.go('/events/$eventName');
+          context.go('/events/$eventId');
         },
         child: Container(
           decoration: BoxDecoration(
@@ -66,7 +81,7 @@ class EventCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 5),
                         Text(
-                          eventDate,
+                          formattedDate,
                           style: const TextStyle(
                             fontSize: 14,
                             color: Colors.white70,
@@ -84,12 +99,14 @@ class EventCard extends StatelessWidget {
               const SizedBox(height: 10),
               Row(
                 children: [
-                  const Icon(Icons.location_on, color: Colors.white70, size: 16),
+                  const Icon(Icons.location_on,
+                      color: Colors.white70, size: 16),
                   const SizedBox(width: 5),
                   Expanded(
                     child: Text(
                       eventLocation,
-                      style: const TextStyle(fontSize: 14, color: Colors.white70),
+                      style:
+                          const TextStyle(fontSize: 14, color: Colors.white70),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -103,7 +120,8 @@ class EventCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Association: $eventAssociation',
-                      style: const TextStyle(fontSize: 14, color: Colors.white70),
+                      style:
+                          const TextStyle(fontSize: 14, color: Colors.white70),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -117,7 +135,8 @@ class EventCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Category: $eventCategory',
-                      style: const TextStyle(fontSize: 14, color: Colors.white70),
+                      style:
+                          const TextStyle(fontSize: 14, color: Colors.white70),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
