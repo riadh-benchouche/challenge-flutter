@@ -15,28 +15,32 @@ class EventDetailScreen extends StatefulWidget {
 
 class _EventDetailScreenState extends State<EventDetailScreen> {
   late Future<Event> _eventFuture;
+  late Future<bool> _participationFuture;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadEvent();
+    _loadData();
   }
 
-  void _loadEvent() {
+  void _loadData() {
     final eventProvider = Provider.of<EventProvider>(context, listen: false);
     _eventFuture = eventProvider.fetchEventById(widget.eventId);
+    _participationFuture = eventProvider.checkParticipation(widget.eventId);
   }
 
   Future<void> _toggleParticipation(Event event) async {
     if (_isLoading) return;
 
-    if (event.isParticipating) {
+    final isParticipating = await _participationFuture;
+
+    if (isParticipating) {
       final shouldLeave = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Quitter l\'événement'),
-          content: const Text('Voulez-vous vraiment quitter cet événement ?'),
+          title: const Text('Se désinscrire'),
+          content: const Text('Voulez-vous vraiment vous désinscrire de cet événement ?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
@@ -44,7 +48,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             ),
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Quitter'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('Me désinscrire'),
             ),
           ],
         ),
@@ -57,18 +64,20 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
     try {
       final eventProvider = Provider.of<EventProvider>(context, listen: false);
-      await eventProvider.toggleParticipation(event.id, !event.isParticipating);
+      await eventProvider.toggleParticipation(event.id, !isParticipating);
+
+      // Recharger toutes les données
+      _loadData();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              event.isParticipating
-                  ? 'Vous avez quitté l\'événement'
+              isParticipating
+                  ? 'Vous vous êtes désinscrit de l\'événement'
                   : 'Vous participez maintenant à l\'événement',
             ),
-            backgroundColor:
-                event.isParticipating ? Colors.orange : Colors.green,
+            backgroundColor: isParticipating ? Colors.orange : Colors.green,
           ),
         );
       }
@@ -129,22 +138,22 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       ),
       body: FutureBuilder<Event>(
         future: _eventFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+        builder: (context, eventSnapshot) {
+          if (eventSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.hasError) {
+          if (eventSnapshot.hasError) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.error_outline, size: 60, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text('Erreur: ${snapshot.error}'),
+                  Text('Erreur: ${eventSnapshot.error}'),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
-                    onPressed: () => setState(() => _loadEvent()),
+                    onPressed: () => setState(() => _loadData()),
                     icon: const Icon(Icons.refresh),
                     label: const Text('Réessayer'),
                   ),
@@ -153,18 +162,18 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             );
           }
 
-          if (!snapshot.hasData) {
+          if (!eventSnapshot.hasData) {
             return const Center(
               child: Text('Événement non trouvé'),
             );
           }
 
-          final event = snapshot.data!;
+          final event = eventSnapshot.data!;
           final formattedDate =
-              DateFormat('dd MMMM yyyy à HH:mm', 'fr_FR').format(event.date);
+          DateFormat('dd MMMM yyyy à HH:mm', 'fr_FR').format(event.date);
 
           return RefreshIndicator(
-            onRefresh: () async => _loadEvent(),
+            onRefresh: () async => _loadData(),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
@@ -210,11 +219,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        _buildDetailRow(
-                            theme, Icons.calendar_today, formattedDate),
+                        _buildDetailRow(theme, Icons.calendar_today, formattedDate),
                         const SizedBox(height: 12),
-                        _buildDetailRow(
-                            theme, Icons.location_on, event.location),
+                        _buildDetailRow(theme, Icons.location_on, event.location),
                         const SizedBox(height: 12),
                         _buildDetailRow(
                           theme,
@@ -228,53 +235,59 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                           'Association: ${event.associationName}',
                         ),
                         const SizedBox(height: 32),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: event.isParticipating
-                                  ? Colors.red.shade400
-                                  : theme.primaryColor,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(25),
-                              ),
-                            ),
-                            onPressed: _isLoading
-                                ? null
-                                : () => _toggleParticipation(event),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white),
-                                    ),
-                                  )
-                                : Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        event.isParticipating
-                                            ? Icons.exit_to_app
-                                            : Icons.check_circle,
-                                        color: Colors.white,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        event.isParticipating
-                                            ? 'Ne plus participer'
-                                            : 'Participer',
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
+                        FutureBuilder<bool>(
+                          future: _participationFuture,
+                          builder: (context, participationSnapshot) {
+                            final isParticipating = participationSnapshot.data ?? false;
+
+                            return SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isParticipating
+                                      ? Colors.red.shade400
+                                      : theme.primaryColor,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(25),
                                   ),
-                          ),
+                                ),
+                                onPressed: _isLoading || participationSnapshot.connectionState == ConnectionState.waiting
+                                    ? null
+                                    : () => _toggleParticipation(event),
+                                child: _isLoading || participationSnapshot.connectionState == ConnectionState.waiting
+                                    ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                                    : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      isParticipating
+                                          ? Icons.exit_to_app
+                                          : Icons.check_circle,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      isParticipating
+                                          ? 'Ne plus participer'
+                                          : 'Participer',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

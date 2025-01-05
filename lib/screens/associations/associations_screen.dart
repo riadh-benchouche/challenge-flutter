@@ -181,9 +181,7 @@ class _AssociationsScreenState extends State<AssociationsScreen>
               return AssociationCard(
                 associationId: association.id,
                 associationName: association.name,
-                imageSrc: association.imageUrl.isEmpty
-                    ? 'https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png'
-                    : association.imageUrl,
+                imageSrc: association.imageUrl,
                 userCount: 12,
                 eventCount: 13,
                 description: association.description,
@@ -266,6 +264,7 @@ class _AssociationsScreenState extends State<AssociationsScreen>
       ),
       floatingActionButton: associationProvider.canCreateAssociation
           ? FloatingActionButton.extended(
+              heroTag: 'createAssociationFAB',
               onPressed: () => context.go('/associations/create-association'),
               backgroundColor: theme.primaryColor,
               icon: const Icon(Icons.add),
