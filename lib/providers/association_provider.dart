@@ -105,6 +105,21 @@ class AssociationProvider with ChangeNotifier {
     }
   }
 
+  Future<List<Association>> fetchAssociationByOwner() async {
+    try {
+      _initApiService();
+      List<Association> ownerAssociations = await _apiService.getAssociationByOwner(userProvider.userData!['id']);
+      _associations = ownerAssociations;
+      notifyListeners();
+      return ownerAssociations;
+    } catch (error) {
+      if (error.toString().contains('Session expirée')) {
+        await userProvider.logout();
+      }
+      rethrow;
+    }
+  }
+
   bool get canCreateAssociation {
     return userProvider.userData?['role'] == 'association_leader';
   }

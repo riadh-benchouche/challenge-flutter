@@ -1,3 +1,4 @@
+import 'package:challenge_flutter/models/category_model.dart';
 import 'package:flutter/foundation.dart';
 import '../models/event.dart';
 import '../services/event_service.dart';
@@ -8,9 +9,11 @@ class EventProvider with ChangeNotifier {
   late EventService _eventService;
   List<Event>? _associationEvents;
   List<Event>? _participatingEvents;
+  List<CategoryModel>? _categories;
+
+  List<CategoryModel>? get categories => _categories;
   Event? _currentEvent;
   bool _shouldSwitchToParticipating = false;
-
 
   EventProvider({required this.userProvider}) {
     _initEventService();
@@ -30,7 +33,9 @@ class EventProvider with ChangeNotifier {
   }
 
   List<Event>? get associationEvents => _associationEvents;
+
   List<Event>? get participatingEvents => _participatingEvents;
+
   Event? get currentEvent => _currentEvent;
 
   Future<List<Event>> fetchAssociationEvents() async {
@@ -102,5 +107,49 @@ class EventProvider with ChangeNotifier {
       }
       rethrow;
     }
+  }
+
+  Future<Event> createEvent(String name, String description, DateTime date,
+      String location, String categoryId, String associationId) async {
+    try {
+      _initEventService();
+      final event = await _eventService.createEvent(
+        name: name,
+        description: description,
+        date: date,
+        location: location,
+        categoryId: categoryId,
+        associationId: associationId,
+      );
+      await Future.wait([
+        fetchAssociationEvents(),
+        fetchParticipatingEvents(),
+      ]);
+      notifyListeners();
+      return event;
+    } catch (error) {
+      if (error.toString().contains('Session expirée')) {
+        await userProvider.logout();
+      }
+      rethrow;
+    }
+  }
+
+  Future<List<CategoryModel>> fetchCategories() async {
+    try {
+      _initEventService();
+      _categories = await _eventService.getCategories();
+      notifyListeners();
+      return _categories!;
+    } catch (error) {
+      if (error.toString().contains('Session expirée')) {
+        await userProvider.logout();
+      }
+      rethrow;
+    }
+  }
+
+  bool get canCreateEvent {
+    return userProvider.userData?['role'] == 'association_leader';
   }
 }

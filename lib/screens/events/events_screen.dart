@@ -2,6 +2,7 @@ import 'package:challenge_flutter/models/event.dart';
 import 'package:challenge_flutter/providers/event_provider.dart';
 import 'package:challenge_flutter/widgets/home/event_card_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class EventScreen extends StatefulWidget {
@@ -106,6 +107,7 @@ class _EventScreenState extends State<EventScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final eventProvider = Provider.of<EventProvider>(context);
 
     return Scaffold(
       body: Column(
@@ -148,6 +150,16 @@ class _EventScreenState extends State<EventScreen>
           ),
         ],
       ),
+      floatingActionButton: eventProvider.canCreateEvent
+          ? FloatingActionButton.extended(
+              heroTag: 'createEventFAB',
+              // Ajout du heroTag unique
+              onPressed: () => context.go('/events/create-event'),
+              backgroundColor: theme.primaryColor,
+              icon: const Icon(Icons.add),
+              label: const Text('Nouvel événement'),
+            )
+          : null,
     );
   }
 }

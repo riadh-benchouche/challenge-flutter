@@ -2,10 +2,12 @@ import 'package:challenge_flutter/providers/event_provider.dart';
 import 'package:challenge_flutter/providers/home_provider.dart';
 import 'package:challenge_flutter/providers/message_provider.dart';
 import 'package:challenge_flutter/screens/associations/create_association_screen.dart';
+import 'package:challenge_flutter/screens/events/create_event_screen.dart';
 import 'package:challenge_flutter/screens/layout/main_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'providers/association_provider.dart';
 import 'providers/user_provider.dart';
@@ -61,9 +63,10 @@ Future<void> main() async {
           create: (context) => MessageProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
-          update: (context, userProvider, previous) => userProvider.token != null
-              ? MessageProvider(userProvider: userProvider)
-              : previous ?? MessageProvider(userProvider: userProvider),
+          update: (context, userProvider, previous) =>
+              userProvider.token != null
+                  ? MessageProvider(userProvider: userProvider)
+                  : previous ?? MessageProvider(userProvider: userProvider),
         ),
       ],
       child: const MyApp(),
@@ -124,6 +127,13 @@ final GoRouter _router = GoRouter(
           ),
           routes: <RouteBase>[
             GoRoute(
+              path: 'create-event',
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+                  const MaterialPage(
+                child: CreateEventScreen(),
+              ),
+            ),
+            GoRoute(
               path: ':eventId',
               pageBuilder: (BuildContext context, GoRouterState state) =>
                   MaterialPage(
@@ -143,7 +153,7 @@ final GoRouter _router = GoRouter(
             GoRoute(
               path: 'create-association',
               pageBuilder: (BuildContext context, GoRouterState state) =>
-              const MaterialPage(
+                  const MaterialPage(
                 child: CreateAssociationScreen(),
               ),
             ),
@@ -200,6 +210,16 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Flutter Association Manager',
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('fr', 'FR'),
+        Locale('en', 'US'),
+      ],
+      locale: const Locale('fr', 'FR'),
       theme: ThemeData(
         primaryColor: const Color(0xFF001B40),
         colorScheme: ColorScheme.fromSwatch().copyWith(

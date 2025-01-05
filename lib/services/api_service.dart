@@ -142,4 +142,16 @@ class ApiService {
 
     throw Exception('Impossible de créer l\'association : ${response.body}');
   }
+
+  Future<List<Association>> getAssociationByOwner(String ownerId) async {
+    final response = await _handleResponse(() =>
+        http.get(Uri.parse('$baseUrl/users/$ownerId/owner-associations'), headers: headers));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonData = jsonDecode(response.body);
+      return jsonData.map((json) => Association.fromJson(json)).toList();
+    } else {
+      throw Exception('Associations non trouvées : ${response.body}');
+    }
+  }
 }
