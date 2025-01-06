@@ -63,7 +63,7 @@ class _MainLayoutState extends State<MainLayout> {
     const HomeScreen(),
     const EventScreen(),
     const AssociationsScreen(),
-    MessagesScreen(),
+    const MessagesScreen(),
   ];
 
   String _getPageTitle(int index) {

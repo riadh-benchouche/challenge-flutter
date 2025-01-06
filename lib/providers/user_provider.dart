@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) 'dart:html';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,8 +32,6 @@ class UserProvider extends ChangeNotifier {
   String? get token => _token;
   Map<String, dynamic>? get userData => _userData;
 
-  UserProvider();
-
   Future<void> initializeApp() async {
     if (!_initialized) {
       await _loadStoredData();
@@ -51,15 +49,14 @@ class UserProvider extends ChangeNotifier {
 
       if (_token != null && userDataString != null) {
         _userData = jsonDecode(userDataString);
-        _isLoggedIn = true; // S'assurer que isLoggedIn est à true
+        _isLoggedIn = true;
       }
     } catch (e) {
       debugPrint('Erreur lors du chargement des données: $e');
     }
   }
 
-  Future<void> _saveAuthData(
-      String token, Map<String, dynamic> userData) async {
+  Future<void> _saveAuthData(String token, Map<String, dynamic> userData) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(TOKEN_KEY, token);
@@ -68,6 +65,12 @@ class UserProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Erreur lors de la sauvegarde des données: $e');
     }
+  }
+
+  void updateUserData(Map<String, dynamic> newData) {
+    _userData = newData;
+    _saveAuthData(_token!, _userData!);
+    notifyListeners();
   }
 
   Future<void> _clearAuthData() async {
@@ -82,12 +85,11 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<http.Response> authenticatedRequest(
-    String endpoint, {
-    String method = 'GET',
-    Map<String, dynamic>? body,
-  }) async {
+      String endpoint, {
+        String method = 'GET',
+        Map<String, dynamic>? body,
+      }) async {
     final url = Uri.parse('$_baseUrl$endpoint');
-
     final headers = {
       'Content-Type': 'application/json',
       if (_token != null) 'Authorization': 'Bearer $_token',
@@ -95,7 +97,6 @@ class UserProvider extends ChangeNotifier {
 
     try {
       http.Response response;
-
       switch (method) {
         case 'GET':
           response = await http.get(url, headers: headers);
@@ -125,7 +126,6 @@ class UserProvider extends ChangeNotifier {
         await logout();
         throw Exception('Session expirée, veuillez vous reconnecter');
       }
-
       return response;
     } catch (error) {
       throw Exception('Erreur de requête: ${error.toString()}');
@@ -150,7 +150,6 @@ class UserProvider extends ChangeNotifier {
         _isLoggedIn = true;
         await _saveAuthData(_token!, _userData!);
         notifyListeners();
-
       } else {
         final errorData = jsonDecode(response.body);
         throw Exception(errorData['message'] ?? 'Échec de la connexion');
@@ -193,5 +192,17 @@ class UserProvider extends ChangeNotifier {
     _userData = null;
     await _clearAuthData();
     notifyListeners();
+  }
+
+  Future<void> refreshUserData() async {
+    try {
+      final response = await authenticatedRequest('/me');
+      if (response.statusCode == 200) {
+        final newData = jsonDecode(response.body);
+        updateUserData(newData);
+      }
+    } catch (e) {
+      debugPrint('Erreur refresh user data: $e');
+    }
   }
 }

@@ -34,7 +34,6 @@ class _EventScreenState extends State<EventScreen>
     _loadEvents();
 
     _tabController.addListener(() {
-      debugPrint('EventScreen - Tab changed');
       _loadEvents();
     });
   }
@@ -50,8 +49,6 @@ class _EventScreenState extends State<EventScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    debugPrint('EventScreen - didChangeDependencies');
-
     // Ne charger qu'au premier appel de didChangeDependencies
     if (_isFirstLoad) {
       final eventProvider = Provider.of<EventProvider>(context);
@@ -66,7 +63,6 @@ class _EventScreenState extends State<EventScreen>
 
   void _loadEvents() async {
     if (!mounted) return;
-    debugPrint('EventScreen - Loading events');
     final eventProvider = Provider.of<EventProvider>(context, listen: false);
 
     // Charger en fonction de l'onglet actif
