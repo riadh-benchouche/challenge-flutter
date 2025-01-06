@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 class UserProvider extends ChangeNotifier {
   static const String TOKEN_KEY = 'auth_token';
@@ -59,8 +60,7 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _saveAuthData(
-      String token, Map<String, dynamic> userData) async {
+  Future<void> _saveAuthData(String token, Map<String, dynamic> userData) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(TOKEN_KEY, token);
@@ -83,10 +83,10 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<http.Response> authenticatedRequest(
-    String endpoint, {
-    String method = 'GET',
-    Map<String, dynamic>? body,
-  }) async {
+      String endpoint, {
+        String method = 'GET',
+        Map<String, dynamic>? body,
+      }) async {
     final url = Uri.parse('$_baseUrl$endpoint');
 
     final headers = {
@@ -151,8 +151,6 @@ class UserProvider extends ChangeNotifier {
         _isLoggedIn = true;
         await _saveAuthData(_token!, _userData!);
         notifyListeners();
-
-        // Pas de navigation ici - elle sera gérée dans le LoginScreen
       } else {
         final errorData = jsonDecode(response.body);
         throw Exception(errorData['message'] ?? 'Échec de la connexion');
@@ -162,32 +160,52 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> register(String email, String password) async {
+  Future<void> register(String name, String email, String password, BuildContext context) async {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/auth/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
+          'name': name,
           'email': email,
           'password': password,
         }),
       );
 
+      debugPrint('Réponse HTTP status: ${response.statusCode}');
+
       if (response.statusCode == 201) {
-        final data = jsonDecode(response.body);
-        _token = data['token'];
-        _userData = data['user'];
-        _isLoggedIn = true;
-        await _saveAuthData(_token!, _userData!);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Inscription réussie. Veuillez vous connecter.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          GoRouter.of(context).go('/login');
+        }
         notifyListeners();
-      } else {
+      } else if (response.statusCode == 409) {
+        throw Exception('Cet utilisateur existe déjà.');
+      } else if (response.statusCode == 422) {
         final errorData = jsonDecode(response.body);
-        throw Exception(errorData['message'] ?? 'Échec de l\'inscription');
+        throw Exception(errorData['message'] ?? 'Les données sont invalides.');
+      } else {
+        throw Exception('Erreur d\'inscription: Code ${response.statusCode}');
       }
     } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       throw Exception('Erreur d\'inscription: ${error.toString()}');
     }
   }
+
 
   Future<void> logout() async {
     _isLoggedIn = false;
