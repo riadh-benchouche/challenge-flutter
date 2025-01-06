@@ -124,6 +124,19 @@ class MessageProvider with ChangeNotifier {
     if (!_messages.containsKey(associationId)) {
       _messages[associationId] = [];
     }
+
+    // Ne pas ajouter le message si c'est nous qui l'avons envoyé
+    if (message.senderId == userProvider.userData!['id']) {
+      // Mettre à jour uniquement le statut du message existant
+      final existingIndex = _messages[associationId]!.indexWhere((m) => m.id == message.id);
+      if (existingIndex != -1) {
+        _messages[associationId]![existingIndex] = message.copyWith(status: MessageStatus.sent);
+        notifyListeners();
+      }
+      return;
+    }
+
+    // Sinon, ajouter le nouveau message reçu
     _messages[associationId]!.add(message);
     _updateUnreadCount(associationId);
     notifyListeners();
@@ -146,6 +159,7 @@ class MessageProvider with ChangeNotifier {
   }
 
   Future<void> sendMessage(String content, String associationId) async {
+    // Créer le message local
     final message = Message(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       content: content,
@@ -157,31 +171,24 @@ class MessageProvider with ChangeNotifier {
       status: MessageStatus.sending,
     );
 
-    // Envoyer le message via HTTP d'abord
     try {
-      final response = await http.post(
-        Uri.parse('${userProvider.baseUrl}/messages'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${userProvider.token}',
-        },
-        body: jsonEncode(message.toJson()),
-      );
-
-      if (response.statusCode == 201) {
-        // Une fois le message sauvegardé en BDD, on l'ajoute localement
-        if (!_messages.containsKey(associationId)) {
-          _messages[associationId] = [];
-        }
-        _messages[associationId]!.add(message);
-        notifyListeners();
-
-        // Puis on le diffuse via WebSocket
-        _webSocketService.sendMessage(message);
-      } else {
-        throw Exception('Échec de l\'envoi du message');
+      // Ajouter le message localement avec status "sending"
+      if (!_messages.containsKey(associationId)) {
+        _messages[associationId] = [];
       }
+      _messages[associationId]!.add(message);
+      notifyListeners();
+
+      // Envoyer uniquement via WebSocket
+      _webSocketService.sendMessage(message);
+
     } catch (e) {
+      // En cas d'erreur, mettre à jour le statut du message local
+      final messageIndex = _messages[associationId]!.indexWhere((m) => m.id == message.id);
+      if (messageIndex != -1) {
+        _messages[associationId]![messageIndex] = message.copyWith(status: MessageStatus.failed);
+        notifyListeners();
+      }
       debugPrint('Erreur envoi message: $e');
       throw Exception('Impossible d\'envoyer le message: $e');
     }
