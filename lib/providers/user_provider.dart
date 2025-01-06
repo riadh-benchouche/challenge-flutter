@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
 
 class UserProvider extends ChangeNotifier {
   static const String TOKEN_KEY = 'auth_token';
@@ -152,7 +151,6 @@ class UserProvider extends ChangeNotifier {
         await _saveAuthData(_token!, _userData!);
         notifyListeners();
 
-        // Pas de navigation ici - elle sera gérée dans le LoginScreen
       } else {
         final errorData = jsonDecode(response.body);
         throw Exception(errorData['message'] ?? 'Échec de la connexion');
