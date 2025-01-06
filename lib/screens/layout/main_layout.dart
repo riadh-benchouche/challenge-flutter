@@ -1,3 +1,7 @@
+import 'package:challenge_flutter/providers/association_provider.dart';
+import 'package:challenge_flutter/providers/event_provider.dart';
+import 'package:challenge_flutter/providers/home_provider.dart';
+import 'package:challenge_flutter/providers/message_provider.dart';
 import 'package:challenge_flutter/screens/associations/associations_screen.dart';
 import 'package:challenge_flutter/screens/events/events_screen.dart';
 import 'package:challenge_flutter/screens/home/home_screen.dart';
@@ -24,6 +28,35 @@ class _MainLayoutState extends State<MainLayout> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _loadDataForCurrentTab();
+  }
+
+  void _loadDataForCurrentTab() {
+    if (!mounted) return;
+
+    switch (_currentIndex) {
+      case 0: // Home
+        final homeProvider = Provider.of<HomeProvider>(context, listen: false);
+        homeProvider.refreshAll();
+        break;
+      case 1: // Events
+        final eventProvider =
+            Provider.of<EventProvider>(context, listen: false);
+        eventProvider.fetchAssociationEvents();
+        eventProvider.fetchParticipatingEvents();
+        break;
+      case 2: // Associations
+        final associationProvider =
+            Provider.of<AssociationProvider>(context, listen: false);
+        associationProvider.fetchAssociationByUser();
+        associationProvider.fetchAssociations();
+        break;
+      case 3: // Messages
+        final messageProvider =
+            Provider.of<MessageProvider>(context, listen: false);
+        messageProvider.loadUserAssociations();
+        break;
+    }
   }
 
   final List<Widget> _screens = [
@@ -69,6 +102,7 @@ class _MainLayoutState extends State<MainLayout> {
           setState(() {
             _currentIndex = index;
           });
+          _loadDataForCurrentTab();
         },
       ),
     );

@@ -226,6 +226,7 @@ class MyApp extends StatelessWidget {
       ],
       locale: const Locale('fr', 'FR'),
       theme: ThemeData(
+        useMaterial3: true,
         primaryColor: const Color(0xFF001B40),
         colorScheme: ColorScheme.fromSwatch().copyWith(
           secondary: const Color(0xFF00EAFF),
