@@ -40,12 +40,10 @@ class _AssociationsScreenState extends State<AssociationsScreen>
   }
 
   Future<void> _loadAssociations() async {
-    final associationProvider =
-        Provider.of<AssociationProvider>(context, listen: false);
-    setState(() {
-      _myAssociationsFuture = associationProvider.fetchAssociationByUser();
-      _allAssociationsFuture = associationProvider.fetchAssociations();
-    });
+    final associationProvider = Provider.of<AssociationProvider>(context, listen: false);
+    _myAssociationsFuture = associationProvider.fetchAssociationByUser();
+    _allAssociationsFuture = associationProvider.fetchAssociations();
+    if (mounted) setState(() {});
   }
 
   List<Association> _filterAssociations(
@@ -93,23 +91,17 @@ class _AssociationsScreenState extends State<AssociationsScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.red,
-          ),
+          const Icon(Icons.error_outline, size: 64, color: Colors.red),
           const SizedBox(height: 16),
-          Text(
-            'Erreur: ${error.toString()}',
+          Text('Erreur: ${error.toString()}',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.red,
-              fontSize: 16,
-            ),
+            style: const TextStyle(color: Colors.red, fontSize: 16),
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
-            onPressed: onRetry,
+            onPressed: () {
+              _loadAssociations(); // Appel direct sans setState
+            },
             icon: const Icon(Icons.refresh),
             label: const Text('Réessayer'),
           ),
