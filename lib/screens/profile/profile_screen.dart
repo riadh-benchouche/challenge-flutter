@@ -74,6 +74,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    const String baseUrl = 'http://localhost:3000/';
 
     if (_isLoading) {
       return Scaffold(
@@ -121,18 +122,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             CircleAvatar(
               radius: 60,
               backgroundImage: _profileData?['image_url']?.isNotEmpty == true
-                  ? NetworkImage(_profileData!['image_url'])
+                  ? NetworkImage('$baseUrl${_profileData!['image_url']}')
                   : null,
               backgroundColor: Colors.grey[300],
               child: _profileData?['image_url']?.isEmpty != false
                   ? Text(
-                _profileData?['name']?[0].toUpperCase() ?? 'U',
-                style: const TextStyle(
-                  fontSize: 40,
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w600,
-                ),
-              )
+                      _profileData?['name']?[0].toUpperCase() ?? 'U',
+                      style: const TextStyle(
+                        fontSize: 40,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )
                   : null,
             ),
             const SizedBox(height: 16),
@@ -187,7 +188,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   onPressed: () {
-                    // Handle edit profile
+                    context.go('/edit-profile');
                   },
                   child: const Text(
                     'Edit Profile',
@@ -228,11 +229,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileOption(
-      IconData icon,
-      String label,
-      String value,
-      ThemeData theme,
-      ) {
+    IconData icon,
+    String label,
+    String value,
+    ThemeData theme,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(

@@ -17,6 +17,7 @@ import 'screens/events/event_detail_screen.dart';
 import 'screens/associations/association_detail_screen.dart';
 import 'screens/messages/message_detail_screen.dart';
 import 'screens/profile/profile_screen.dart';
+import 'screens/edit_profile/edit_profile_screen.dart';
 import 'screens/associations/join_association_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -190,6 +191,10 @@ final GoRouter _router = GoRouter(
               const MaterialPage(
             child: ProfileScreen(),
           ),
+        ),
+        GoRoute(
+          path: '/edit-profile',
+          builder: (context, state) => EditProfileScreen(),
         ),
         GoRoute(
           path: 'join-association',
