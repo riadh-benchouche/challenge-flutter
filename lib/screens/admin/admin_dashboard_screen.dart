@@ -17,7 +17,7 @@ class AdminDashboardScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 // Naviguer vers la gestion des utilisateurs
-                GoRouter.of(context).go('/admin/dashboard/users');
+                context.go('/admin/dashboard/users');
               },
               child: const Text('Gérer les utilisateurs'),
             ),
