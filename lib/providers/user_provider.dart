@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'dart:io' if (dart.library.html) 'dart:html';
 import 'package:go_router/go_router.dart';
-import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
+import 'platform_helper.dart';
 
 class UserProvider extends ChangeNotifier {
   static const String TOKEN_KEY = 'auth_token';
@@ -16,13 +16,13 @@ class UserProvider extends ChangeNotifier {
 
   String get _baseUrl {
     if (kIsWeb) {
-      return 'http://localhost:3000'; // URL de l'API pour le Web
-    } else if (Platform.isAndroid) {
-      return 'http://10.0.2.2:3000'; // URL de l'API pour l'émulateur Android
-    } else if (Platform.isIOS) {
-      return 'http://127.0.0.1:3000'; // URL de l'API pour l'émulateur iOS
+      return 'http://localhost:3000'; // URL pour Web
+    } else if (isAndroid) {
+      return 'http://10.0.2.2:3000'; // URL pour Android (émulateur)
+    } else if (isIOS) {
+      return 'http://127.0.0.1:3000'; // URL pour iOS (émulateur)
     } else {
-      return 'http://localhost:3000'; // Autres plateformes (desktop)
+      return 'http://localhost:3000'; // Desktop ou autres
     }
   }
 
