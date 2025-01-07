@@ -23,6 +23,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
 import 'screens/admin/manage_users_screen.dart';
 import 'screens/admin/pending_associations_screen.dart';
+import 'screens/admin/admin_layout.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,36 +42,36 @@ Future<void> main() async {
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
           update: (context, userProvider, previous) =>
-              userProvider.token != null
-                  ? AssociationProvider(userProvider: userProvider)
-                  : previous ?? AssociationProvider(userProvider: userProvider),
+          userProvider.token != null
+              ? AssociationProvider(userProvider: userProvider)
+              : previous ?? AssociationProvider(userProvider: userProvider),
         ),
         ChangeNotifierProxyProvider<UserProvider, EventProvider>(
           create: (context) => EventProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
           update: (context, userProvider, previous) =>
-              userProvider.token != null
-                  ? EventProvider(userProvider: userProvider)
-                  : previous ?? EventProvider(userProvider: userProvider),
+          userProvider.token != null
+              ? EventProvider(userProvider: userProvider)
+              : previous ?? EventProvider(userProvider: userProvider),
         ),
         ChangeNotifierProxyProvider<UserProvider, HomeProvider>(
           create: (context) => HomeProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
           update: (context, userProvider, previous) =>
-              userProvider.token != null
-                  ? HomeProvider(userProvider: userProvider)
-                  : previous ?? HomeProvider(userProvider: userProvider),
+          userProvider.token != null
+              ? HomeProvider(userProvider: userProvider)
+              : previous ?? HomeProvider(userProvider: userProvider),
         ),
         ChangeNotifierProxyProvider<UserProvider, MessageProvider>(
           create: (context) => MessageProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
           update: (context, userProvider, previous) =>
-              userProvider.token != null
-                  ? MessageProvider(userProvider: userProvider)
-                  : previous ?? MessageProvider(userProvider: userProvider),
+          userProvider.token != null
+              ? MessageProvider(userProvider: userProvider)
+              : previous ?? MessageProvider(userProvider: userProvider),
         ),
       ],
       child: const MyApp(),
@@ -80,6 +81,7 @@ Future<void> main() async {
 
 final GoRouter _router = GoRouter(
   redirect: (BuildContext context, GoRouterState state) {
+    // Accès au UserProvider pour vérifier si l'utilisateur est connecté
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     if (!userProvider.initialized) return null;
@@ -94,54 +96,173 @@ final GoRouter _router = GoRouter(
       return '/login';
     }
 
+    if (isAdmin && state.uri.toString() == '/') {
+      return '/admin';
+    }
+
     if (isAdmin && state.uri.toString().startsWith('/admin')) {
-      return null; // Autoriser les routes admin
+      return null; // Pas de redirection nécessaire
     }
 
     if (isLoggedIn && isPublicRoute) {
       return '/';
     }
 
+    if (state.uri.toString().startsWith('/admin') && !isAdmin) {
+      return '/'; // Redirige les non-admins vers l'accueil
+    }
+
+    // Pas de redirection nécessaire
     return null;
   },
   routes: <RouteBase>[
     GoRoute(
       path: '/',
       pageBuilder: (BuildContext context, GoRouterState state) =>
-      const MaterialPage(child: MainLayout(initialIndex: 0)),
+      const MaterialPage(
+        child: MainLayout(initialIndex: 0),
+      ),
       routes: <RouteBase>[
         GoRoute(
           path: 'login',
           pageBuilder: (BuildContext context, GoRouterState state) =>
-              MaterialPage(child: LoginScreen(controller: PageController())),
+              MaterialPage(
+                child: LoginScreen(controller: PageController()),
+              ),
         ),
         GoRoute(
           path: 'register',
           pageBuilder: (BuildContext context, GoRouterState state) =>
-              MaterialPage(child: SignupScreen(controller: PageController())),
+              MaterialPage(
+                child: SignupScreen(controller: PageController()),
+              ),
         ),
         GoRoute(
-          path: 'admin/dashboard',
+          path: '/admin',
           pageBuilder: (BuildContext context, GoRouterState state) =>
-          MaterialPage(child: AdminDashboardScreen()),
+              MaterialPage(
+                child: AdminLayout(
+                  child: AdminDashboardScreen(),
+                ),
+              ),
           routes: <RouteBase>[
             GoRoute(
               path: 'users',
               pageBuilder: (BuildContext context, GoRouterState state) =>
-              const MaterialPage(child: ManageUsersScreen()),
+                  MaterialPage(
+                    child: AdminLayout(
+                      child: ManageUsersScreen(),
+                    ),
+                  ),
             ),
             GoRoute(
               path: 'pending-associations',
               pageBuilder: (BuildContext context, GoRouterState state) =>
-              const MaterialPage(child: PendingAssociationsScreen()),
+                  MaterialPage(
+                    child: AdminLayout(
+                      child: PendingAssociationsScreen(),
+                    ),
+                  ),
+            ),
+            GoRoute(
+              path: 'categories',
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+                  MaterialPage(
+                    child: AdminLayout(
+                      child: PendingAssociationsScreen(),
+                      // child: CategoriesScreen(),
+                    ),
+                  ),
             ),
           ],
+        ),
+        GoRoute(
+          path: 'events',
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+          const MaterialPage(
+            child: MainLayout(initialIndex: 1),
+          ),
+          routes: <RouteBase>[
+            GoRoute(
+              path: 'create-event',
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+              const MaterialPage(
+                child: CreateEventScreen(),
+              ),
+            ),
+            GoRoute(
+              path: ':eventId',
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+                  MaterialPage(
+                    child: EventDetailScreen(
+                        eventId: state.pathParameters['eventId']!),
+                  ),
+            ),
+          ],
+        ),
+        GoRoute(
+          path: 'associations',
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+          const MaterialPage(
+            child: MainLayout(initialIndex: 2),
+          ),
+          routes: <RouteBase>[
+            GoRoute(
+              path: 'create-association',
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+              const MaterialPage(
+                child: CreateAssociationScreen(),
+              ),
+            ),
+            GoRoute(
+              path: ':associationId',
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+                  MaterialPage(
+                    child: AssociationDetailScreen(
+                        associationId: state.pathParameters['associationId']!),
+                  ),
+            ),
+          ],
+        ),
+        GoRoute(
+          path: 'messages',
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+          const MaterialPage(
+            child: MainLayout(initialIndex: 3),
+          ),
+          routes: <RouteBase>[
+            GoRoute(
+              path: ':roomId',
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+                  MaterialPage(
+                    child: MessageDetailScreen(
+                        roomId: state.pathParameters['roomId']!),
+                  ),
+            ),
+          ],
+        ),
+        GoRoute(
+          path: 'profile',
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+          const MaterialPage(
+            child: ProfileScreen(),
+          ),
+        ),
+        GoRoute(
+          path: '/edit-profile',
+          builder: (context, state) => const EditProfileScreen(),
+        ),
+        GoRoute(
+          path: 'join-association',
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+          const MaterialPage(
+            child: JoinAssociationScreen(),
+          ),
         ),
       ],
     ),
   ],
 );
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

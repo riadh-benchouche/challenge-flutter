@@ -6,9 +6,6 @@ class PendingAssociationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Associations en attente'),
-      ),
       body: ListView.builder(
         itemCount:
             5, // Exemple : 5 associations en attente (à remplacer par une vraie liste)
