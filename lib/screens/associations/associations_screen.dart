@@ -162,10 +162,12 @@ class _AssociationsScreenState extends State<AssociationsScreen>
         return RefreshIndicator(
           onRefresh: _loadAssociations,
           child: GridView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            padding: const EdgeInsets.all(16),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 1,
-              childAspectRatio: 1,
+              crossAxisCount: 2, // Affiche 2 cartes par ligne
+              childAspectRatio: 0.7, // Ajustez ce ratio selon vos besoins
+              crossAxisSpacing: 16, // Espacement horizontal entre les cartes
+              mainAxisSpacing: 16, // Espacement vertical entre les cartes
             ),
             itemCount: filteredAssociations.length,
             itemBuilder: (context, index) {
@@ -217,8 +219,8 @@ class _AssociationsScreenState extends State<AssociationsScreen>
                 fontSize: 16,
               ),
               tabs: const [
-                Tab(text: 'Mes Associations'),
                 Tab(text: 'Toutes les Associations'),
+                Tab(text: 'Mes Associations'),
               ],
             ),
           ),
@@ -247,8 +249,8 @@ class _AssociationsScreenState extends State<AssociationsScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildAssociationsList(_myAssociationsFuture),
                 _buildAssociationsList(_allAssociationsFuture),
+                _buildAssociationsList(_myAssociationsFuture),
               ],
             ),
           ),
