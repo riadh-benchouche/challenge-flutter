@@ -1,16 +1,17 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
 import '../../providers/user_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'dart:typed_data';
+import 'dart:convert';
 
 class EditProfileScreen extends StatefulWidget {
+  const EditProfileScreen({super.key});
+
   @override
-  _EditProfileScreenState createState() => _EditProfileScreenState();
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
@@ -20,125 +21,121 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   File? _image;
 
   Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+          source: ImageSource.gallery,
+          maxWidth: 1800,
+          maxHeight: 1800,
+          imageQuality: 85
+      );
+
+      if (pickedFile != null) {
+        final File imageFile = File(pickedFile.path);
+        setState(() => _image = imageFile);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la sélection : $e')),
+      );
     }
   }
 
   Future<void> _updateProfile() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     _formKey.currentState!.save();
-
-    // Récupérer les données utilisateur depuis UserProvider
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final currentUserId = userProvider.userData?['id'] ?? '';
+    final currentUserId = userProvider.userData?['id'];
     final token = userProvider.token;
 
-    if (currentUserId.isEmpty || token == null) {
+    if (currentUserId == null || token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur : utilisateur non authentifié.')),
+        const SnackBar(content: Text('Erreur : utilisateur non authentifié.')),
       );
       return;
     }
 
-    final dio = Dio(BaseOptions(
-      baseUrl: 'http://localhost:3000', // URL de base
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    ));
-
     try {
-      // Envoyer la requête PUT pour mettre à jour le profil
-      final response = await dio.put(
-        '/users/$currentUserId',
-        data: {
-          'name': _name,
+      // Mettre à jour le profil
+      final response = await http.put(
+        Uri.parse('${userProvider.baseUrl}/users/$currentUserId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
         },
+        body: jsonEncode({
+          'name': _name,
+        }),
       );
 
       if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Profil mis à jour avec succès !')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Échec de la mise à jour du profil.')),
-        );
-      }
+        final responseData = jsonDecode(response.body);
+        final updatedUserData = {
+          ...(userProvider.userData ?? {}),
+          ...(responseData as Map<String, dynamic>)
+        };
+        userProvider.updateUserData(updatedUserData);
 
-      // Si une image est sélectionnée, envoyer une requête multipart pour l'image
-      if (_image != null) {
-        final uploadResponse = await _uploadImage(currentUserId, token);
-        if (uploadResponse) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Image mise à jour avec succès !')),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Échec de la mise à jour de l\'image.')),
-          );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profil mis à jour avec succès !')),
+        );
+
+        // Si une image est sélectionnée, l'uploader
+        if (_image != null) {
+          final bool success = await _uploadImage(currentUserId, token);
+          if (success) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Image mise à jour avec succès !')),
+            );
+          }
         }
+
+        if (mounted) Navigator.of(context).pop();
+      } else {
+        throw Exception('Échec de la mise à jour du profil');
       }
-    } on DioException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text('Erreur : ${e.response?.data['message'] ?? e.message}')),
-      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur inattendue : $e')),
+        SnackBar(content: Text('Erreur : ${e.toString()}')),
       );
     }
   }
 
   Future<bool> _uploadImage(String userId, String token) async {
     try {
-      final url = Uri.parse('http://localhost:3000/users/$userId/upload-image');
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final url =
+          Uri.parse('${userProvider.baseUrl}/users/$userId/upload-image');
       final request = http.MultipartRequest('POST', url);
 
       if (kIsWeb) {
-        // Pour Flutter Web
-        final bytes = await _image!.readAsBytes(); // Lire les octets du fichier
+        final bytes = await _image!.readAsBytes();
         request.files.add(http.MultipartFile.fromBytes(
           'image',
           bytes,
-          filename: _image!.path.split('/').last,
+          filename: 'profile_image.jpg',
         ));
       } else {
-        // Pour Mobile (Android/iOS)
-        request.files.add(http.MultipartFile(
+        request.files.add(await http.MultipartFile.fromPath(
           'image',
-          _image!.openRead(),
-          await _image!.length(),
-          filename: _image!.path.split('/').last,
+          _image!.path,
         ));
       }
 
-      // Ajouter les en-têtes d'autorisation
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-      });
-
-      // Envoyer la requête
+      request.headers['Authorization'] = 'Bearer $token';
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
-      // Vérifier la réponse
       if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        final updatedUserData = {
+          ...(userProvider.userData ?? {}),
+          ...(responseData as Map<String, dynamic>)
+        };
+        userProvider.updateUserData(updatedUserData);
         return true;
-      } else {
-        debugPrint('Erreur: ${response.body}');
-        return false;
       }
+      return false;
     } catch (e) {
       debugPrint('Erreur lors de l\'upload: $e');
       return false;
@@ -149,17 +146,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
     final currentUser = userProvider.userData;
-    const String baseUrl = 'http://localhost:3000/';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Edit Profile'),
+        backgroundColor: Theme.of(context).primaryColor,
+        title: const Text('Modifier le profil',
+            style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: Column(
             children: [
               if (_image != null)
                 CircleAvatar(
@@ -168,25 +167,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 )
               else if (currentUser?['image_url'] != null)
                 CircleAvatar(
-                    radius: 60,
-                    backgroundImage:
-                        NetworkImage('$baseUrl${currentUser!['image_url']}'))
+                  radius: 60,
+                  backgroundImage: NetworkImage(
+                    '${userProvider.baseUrl}/${currentUser!['image_url']}',
+                  ),
+                )
               else
-                CircleAvatar(
+                const CircleAvatar(
                   radius: 60,
                   child: Icon(Icons.person, size: 60),
                 ),
               TextButton.icon(
                 onPressed: _pickImage,
-                icon: Icon(Icons.image),
-                label: Text('Change Image'),
+                icon: const Icon(Icons.image),
+                label: const Text('Changer l\'image'),
               ),
               TextFormField(
                 initialValue: currentUser?['name'] ?? '',
-                decoration: InputDecoration(labelText: 'Name'),
+                decoration: const InputDecoration(labelText: 'Nom'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your name.';
+                    return 'Veuillez entrer votre nom';
                   }
                   return null;
                 },
@@ -202,10 +203,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 readOnly: true,
               ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _updateProfile,
-                child: Text('Save Changes'),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                  ),
+                  onPressed: _updateProfile,
+                  child: const Text('Enregistrer les modifications'),
+                ),
               ),
             ],
           ),

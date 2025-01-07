@@ -14,6 +14,7 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passController = TextEditingController();
   final TextEditingController _repassController = TextEditingController();
@@ -23,10 +24,18 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passController.dispose();
     _repassController.dispose();
     super.dispose();
+  }
+
+  String? _validateName(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer votre nom';
+    }
+    return null;
   }
 
   String? _validateEmail(String? value) {
@@ -59,7 +68,7 @@ class _SignupScreenState extends State<SignupScreen> {
     return null;
   }
 
-  void _handleSignup() async {
+  Future<void> _handleSignup() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -71,22 +80,13 @@ class _SignupScreenState extends State<SignupScreen> {
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       await userProvider.register(
+        _nameController.text.trim(),
         _emailController.text.trim(),
         _passController.text.trim(),
+        context, // Passez le `BuildContext` ici
       );
-
-      if (mounted && userProvider.isLoggedIn) {
-        context.go('/');
-      }
     } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error.toString()),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      // Gestion de l'erreur est déjà intégrée dans UserProvider, rien à ajouter ici
     } finally {
       if (mounted) {
         setState(() {
@@ -130,6 +130,17 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
                     const SizedBox(height: 40),
+                    TextFormField(
+                      controller: _nameController,
+                      validator: _validateName,
+                      keyboardType: TextInputType.name,
+                      decoration: InputDecoration(
+                        labelText: 'Nom',
+                        prefixIcon: const Icon(Icons.person),
+                        labelStyle: theme.inputDecorationTheme.labelStyle,
+                      ),
+                    ),
+                    const SizedBox(height: 17),
                     TextFormField(
                       controller: _emailController,
                       validator: _validateEmail,
@@ -193,9 +204,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       child: _isLoading
                           ? const Center(child: CircularProgressIndicator())
                           : ElevatedButton(
-                              onPressed: _handleSignup,
-                              child: const Text('Créer un compte'),
-                            ),
+                        onPressed: _handleSignup,
+                        child: const Text('Créer un compte'),
+                      ),
                     ),
                     const SizedBox(height: 15),
                     Row(

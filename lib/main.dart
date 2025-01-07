@@ -228,7 +228,7 @@ final GoRouter _router = GoRouter(
         ),
         GoRoute(
           path: '/edit-profile',
-          builder: (context, state) => EditProfileScreen(),
+          builder: (context, state) => const EditProfileScreen(),
         ),
         GoRoute(
           path: 'join-association',
@@ -248,6 +248,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Association Manager',
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
