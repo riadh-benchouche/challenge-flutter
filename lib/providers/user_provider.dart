@@ -23,6 +23,10 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  bool get isAdmin {
+    return _userData != null && _userData!['role'] == 'admin';
+  }
+
   bool _isLoggedIn = false;
   String? _token;
   Map<String, dynamic>? _userData;
@@ -51,6 +55,9 @@ class UserProvider extends ChangeNotifier {
 
       if (_token != null && userDataString != null) {
         _userData = jsonDecode(userDataString);
+        if (_userData != null && _userData!.containsKey('role')) {
+          _userData!['role'] = _userData!['role'];
+        }
         _isLoggedIn = true; // S'assurer que isLoggedIn est à true
       }
     } catch (e) {
@@ -147,10 +154,13 @@ class UserProvider extends ChangeNotifier {
         final data = jsonDecode(response.body);
         _token = data['token'];
         _userData = data['user'];
+        if (_userData != null && _userData!.containsKey('role')) {
+          _userData!['role'] = data['user']['role'];
+        }
+
         _isLoggedIn = true;
         await _saveAuthData(_token!, _userData!);
         notifyListeners();
-
       } else {
         final errorData = jsonDecode(response.body);
         throw Exception(errorData['message'] ?? 'Échec de la connexion');

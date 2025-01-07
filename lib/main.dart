@@ -20,6 +20,9 @@ import 'screens/profile/profile_screen.dart';
 import 'screens/edit_profile/edit_profile_screen.dart';
 import 'screens/associations/join_association_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'screens/admin/admin_dashboard_screen.dart';
+import 'screens/admin/manage_users_screen.dart';
+import 'screens/admin/pending_associations_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -83,6 +86,7 @@ final GoRouter _router = GoRouter(
     if (!userProvider.initialized) return null;
 
     final isLoggedIn = userProvider.isLoggedIn;
+    final isAdmin = userProvider.isAdmin;
 
     final isPublicRoute =
         state.uri.toString() == '/login' || state.uri.toString() == '/register';
@@ -91,8 +95,16 @@ final GoRouter _router = GoRouter(
       return '/login';
     }
 
+    if (userProvider.isLoggedIn && userProvider.isAdmin) {
+      return '/admin/dashboard';
+    }
+
     if (isLoggedIn && isPublicRoute) {
       return '/';
+    }
+
+    if (state.uri.toString().startsWith('/admin') && !isAdmin) {
+      return '/'; // Redirige les non-admins vers l'accueil
     }
 
     // Pas de redirection nécessaire
@@ -119,6 +131,28 @@ final GoRouter _router = GoRouter(
               MaterialPage(
             child: SignupScreen(controller: PageController()),
           ),
+        ),
+        GoRoute(
+          path: 'admin/dashboard',
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              MaterialPage(child: AdminDashboardScreen()),
+          routes: <RouteBase>[
+            GoRoute(
+              path: 'users',
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+                  const MaterialPage(
+                child: ManageUsersScreen(), // Écran CRUD utilisateurs
+              ),
+            ),
+            GoRoute(
+              path: 'pending-associations',
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+                  const MaterialPage(
+                child:
+                    PendingAssociationsScreen(), // Écran validation associations
+              ),
+            ),
+          ],
         ),
         GoRoute(
           path: 'events',

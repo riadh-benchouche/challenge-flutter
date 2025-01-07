@@ -128,9 +128,11 @@ class MessageProvider with ChangeNotifier {
     // Ne pas ajouter le message si c'est nous qui l'avons envoyé
     if (message.senderId == userProvider.userData!['id']) {
       // Mettre à jour uniquement le statut du message existant
-      final existingIndex = _messages[associationId]!.indexWhere((m) => m.id == message.id);
+      final existingIndex =
+          _messages[associationId]!.indexWhere((m) => m.id == message.id);
       if (existingIndex != -1) {
-        _messages[associationId]![existingIndex] = message.copyWith(status: MessageStatus.sent);
+        _messages[associationId]![existingIndex] =
+            message.copyWith(status: MessageStatus.sent);
         notifyListeners();
       }
       return;
@@ -153,7 +155,7 @@ class MessageProvider with ChangeNotifier {
   }
 
   void _handleError(dynamic error) {
-    debugPrint('WebSocket error: $error');
+    // debugPrint('WebSocket error: $error');
     _isConnected = false;
     notifyListeners();
   }
@@ -181,12 +183,13 @@ class MessageProvider with ChangeNotifier {
 
       // Envoyer uniquement via WebSocket
       _webSocketService.sendMessage(message);
-
     } catch (e) {
       // En cas d'erreur, mettre à jour le statut du message local
-      final messageIndex = _messages[associationId]!.indexWhere((m) => m.id == message.id);
+      final messageIndex =
+          _messages[associationId]!.indexWhere((m) => m.id == message.id);
       if (messageIndex != -1) {
-        _messages[associationId]![messageIndex] = message.copyWith(status: MessageStatus.failed);
+        _messages[associationId]![messageIndex] =
+            message.copyWith(status: MessageStatus.failed);
         notifyListeners();
       }
       debugPrint('Erreur envoi message: $e');

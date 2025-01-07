@@ -14,7 +14,7 @@ class WebSocketService {
   WebSocketService({required this.token});
 
   void connect() {
-    if (_isDisposed) return;  // Ne pas se reconnecter si disposé
+    if (_isDisposed) return; // Ne pas se reconnecter si disposé
 
     try {
       _channel = IOWebSocketChannel.connect(
@@ -26,8 +26,8 @@ class WebSocketService {
       );
 
       _channel?.stream.listen(
-            (data) {
-          if (_isDisposed) return;  // Ne pas traiter si disposé
+        (data) {
+          if (_isDisposed) return; // Ne pas traiter si disposé
           debugPrint('Message reçu: $data');
           try {
             final message = Message.fromJson(jsonDecode(data));
@@ -38,7 +38,7 @@ class WebSocketService {
           }
         },
         onError: (error) {
-          debugPrint('Erreur WebSocket: $error');
+          // debugPrint('Erreur WebSocket: $error');
           if (!_isDisposed) {
             onError?.call(error);
             _reconnect();
@@ -55,7 +55,7 @@ class WebSocketService {
       );
     } catch (e) {
       if (!_isDisposed) {
-        debugPrint('Erreur connexion WebSocket: $e');
+        // debugPrint('Erreur connexion WebSocket: $e');
         onError?.call(e);
         _reconnect();
       }
@@ -63,7 +63,7 @@ class WebSocketService {
   }
 
   void _reconnect() {
-    debugPrint('Tentative de reconnexion dans 5 secondes...');
+    // debugPrint('Tentative de reconnexion dans 5 secondes...');
     Future.delayed(const Duration(seconds: 5), () {
       if (_channel?.sink == null) {
         connect();
