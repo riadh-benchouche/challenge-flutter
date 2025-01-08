@@ -15,18 +15,18 @@ class MessagesScreen extends StatefulWidget {
 class _MessagesScreenState extends State<MessagesScreen>
     with SingleTickerProviderStateMixin {
   late Future<void> _loadAssociationsFuture;
-  TabController? _tabController; // Changé en nullable
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _loadAssociationsFuture = _loadData();
-    _tabController = TabController(length: 2, vsync: this); // Initialisé ici
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
-    _tabController?.dispose(); // Ajout du null check
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -100,16 +100,15 @@ class _MessagesScreenState extends State<MessagesScreen>
                 ),
                 itemBuilder: (context, index) {
                   final association = associations[index];
-                  final unreadCount =
-                      messageProvider.getUnreadCount(association.id);
                   final lastMessage =
                       messageProvider.getLastMessage(association.id);
 
                   return ListTile(
                     leading: CircleAvatar(
-                        radius: 25,
-                        backgroundColor: Colors.grey[200],
-                        child: Icon(Icons.group, color: Colors.grey[400])),
+                      radius: 25,
+                      backgroundColor: Colors.grey[200],
+                      child: Icon(Icons.group, color: Colors.grey[400]),
+                    ),
                     title: Text(
                       association.name,
                       style: const TextStyle(
@@ -123,14 +122,9 @@ class _MessagesScreenState extends State<MessagesScreen>
                               Expanded(
                                 child: Text(
                                   '${lastMessage.sender.name}: ${lastMessage.content}',
-                                  style: TextStyle(
-                                    color: unreadCount > 0
-                                        ? Colors.black87
-                                        : Colors.grey,
+                                  style: const TextStyle(
+                                    color: Colors.grey,
                                     fontSize: 14,
-                                    fontWeight: unreadCount > 0
-                                        ? FontWeight.w500
-                                        : FontWeight.normal,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -153,29 +147,7 @@ class _MessagesScreenState extends State<MessagesScreen>
                               fontSize: 14,
                             ),
                           ),
-                    trailing: unreadCount > 0
-                        ? Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 4,
-                              horizontal: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.blue,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '$unreadCount',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          )
-                        : null,
-                    onTap: () {
-                      context.go('/messages/${association.id}');
-                    },
+                    onTap: () => context.go('/messages/${association.id}'),
                   );
                 },
               );
@@ -188,10 +160,6 @@ class _MessagesScreenState extends State<MessagesScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Vérifions que le controller est bien initialisé
-    if (_tabController == null)
-      return const Center(child: CircularProgressIndicator());
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).primaryColor,
@@ -199,18 +167,15 @@ class _MessagesScreenState extends State<MessagesScreen>
           preferredSize: const Size.fromHeight(20),
           child: TabBar(
             controller: _tabController,
-            // Le controller est maintenant sûr d'être non-null
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
             indicatorColor: Colors.white,
-            // Ajout de l'indicateur en blanc
             tabs: const [
               Tab(
                 icon: Icon(Icons.message),
                 text: 'Conversations',
               ),
               Tab(
-                // an icon robot or ai or something related to chatbot
                 icon: Icon(Icons.smart_toy),
                 text: 'Chatbot',
               ),
@@ -220,7 +185,6 @@ class _MessagesScreenState extends State<MessagesScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        // Le controller est maintenant sûr d'être non-null
         children: [
           _buildConversationsList(),
           const ChatbotScreen(),

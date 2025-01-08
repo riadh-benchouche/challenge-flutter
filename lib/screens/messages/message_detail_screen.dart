@@ -2,8 +2,8 @@ import 'package:challenge_flutter/models/message.dart';
 import 'package:challenge_flutter/providers/message_provider.dart';
 import 'package:challenge_flutter/providers/user_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 class MessageDetailScreen extends StatefulWidget {
   final String roomId;
@@ -23,12 +23,6 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
   void initState() {
     super.initState();
     _loadMessages();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final messageProvider =
-          Provider.of<MessageProvider>(context, listen: false);
-      messageProvider.markAllMessagesAsRead(widget.roomId);
-    });
   }
 
   @override
@@ -115,42 +109,20 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
                 fontSize: 14,
               ),
             ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  time,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: isCurrentUser ? Colors.white70 : Colors.black54,
-                  ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                time,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isCurrentUser ? Colors.white70 : Colors.black54,
                 ),
-                if (isCurrentUser) ...[
-                  const SizedBox(width: 4),
-                  _buildMessageStatus(message.status),
-                ],
-              ],
+              ),
             ),
           ],
         ),
       ),
     );
-  }
-
-  Widget _buildMessageStatus(MessageStatus status) {
-    switch (status) {
-      case MessageStatus.sending:
-        return const Icon(Icons.access_time, size: 12, color: Colors.white70);
-      case MessageStatus.sent:
-        return const Icon(Icons.check, size: 12, color: Colors.white70);
-      case MessageStatus.delivered:
-        return const Icon(Icons.done_all, size: 12, color: Colors.white70);
-      case MessageStatus.read:
-        return const Icon(Icons.done_all, size: 12, color: Colors.blue);
-      case MessageStatus.failed:
-        return const Icon(Icons.error_outline, size: 12, color: Colors.red);
-    }
   }
 
   @override
@@ -166,36 +138,15 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
         title: Consumer<MessageProvider>(
           builder: (context, messageProvider, child) {
             final association = messageProvider.currentAssociation;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  association?.name ?? 'Chargement...',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'En ligne',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
+            return Text(
+              association?.name ?? 'Chargement...',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             );
           },
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            onPressed: () {
-              // Options du chat
-            },
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -206,9 +157,7 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
                     messageProvider.getMessagesForAssociation(widget.roomId);
 
                 if (messages.isEmpty) {
-                  return const Center(
-                    child: Text('Aucun message'),
-                  );
+                  return const Center(child: Text('Aucun message'));
                 }
 
                 return ListView.builder(
@@ -226,16 +175,7 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
-                  offset: const Offset(0, -1),
-                  blurRadius: 4,
-                ),
-              ],
-            ),
+            color: Colors.white,
             child: SafeArea(
               child: Row(
                 children: [
@@ -256,7 +196,6 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
                         ),
                       ),
                       textCapitalization: TextCapitalization.sentences,
-                      keyboardType: TextInputType.multiline,
                       maxLines: null,
                       onSubmitted: (_) => _sendMessage(),
                     ),

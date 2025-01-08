@@ -9,84 +9,87 @@ class WebSocketService {
   Function(Message)? onMessageReceived;
   Function()? onConnectionClosed;
   Function(dynamic)? onError;
-  bool _isDisposed = false;
+  bool _isConnected = false;
 
   WebSocketService({required this.token});
 
   void connect() {
-    if (_isDisposed) return;
+    if (_isConnected) return;
 
     try {
       _channel = IOWebSocketChannel.connect(
-        'wss://invooce.online/ws', // Changed to WSS
+        'wss://invooce.online/ws',
         headers: {
           'Authorization': 'Bearer $token',
+          'Connection': 'Upgrade',
+          'Upgrade': 'websocket',
         },
-        pingInterval: const Duration(seconds: 30),
       );
 
+      _isConnected = true;
+
       _channel?.stream.listen(
-        (data) {
-          if (_isDisposed) return;
+            (data) {
           try {
+            debugPrint('WebSocket received: $data');
             final message = Message.fromJson(jsonDecode(data));
             onMessageReceived?.call(message);
           } catch (e) {
             debugPrint('Error parsing message: $e');
-            if (!_isDisposed) onError?.call(e);
+            onError?.call(e);
           }
         },
         onError: (error) {
-          if (!_isDisposed) {
-            onError?.call(error);
-            _reconnect();
-          }
+          debugPrint('WebSocket error: $error');
+          _isConnected = false;
+          onError?.call(error);
+          _reconnect();
         },
         onDone: () {
-          if (!_isDisposed) {
-            onConnectionClosed?.call();
-            _reconnect();
-          }
+          debugPrint('WebSocket connection closed');
+          _isConnected = false;
+          onConnectionClosed?.call();
+          _reconnect();
         },
-        cancelOnError: false,
       );
     } catch (e) {
-      if (!_isDisposed) {
-        onError?.call(e);
-        _reconnect();
-      }
+      debugPrint('Connection error: $e');
+      _isConnected = false;
+      onError?.call(e);
+      _reconnect();
     }
   }
 
   void _reconnect() {
-    if (_isDisposed) return;
-    Future.delayed(const Duration(seconds: 5), () {
-      if (!_isDisposed && _channel?.sink == null) {
+    if (!_isConnected) {
+      Future.delayed(const Duration(seconds: 3), () {
         connect();
-      }
-    });
+      });
+    }
   }
 
   void sendMessage(Message message) {
-    if (_isDisposed) return;
+    if (!_isConnected) {
+      connect();
+    }
 
     try {
-      if (_channel?.sink == null) {
-        connect();
-        throw Exception('Reconnecting to WebSocket');
-      }
+      // Simplifier la structure du message pour correspondre à ce que le serveur attend
+      final data = jsonEncode({
+        'content': message.content,
+        'association_id': message.associationId,
+      });
 
-      final data = jsonEncode(message.toJson());
-      _channel!.sink.add(data);
+      debugPrint('Sending message: $data');
+      _channel?.sink.add(data);
     } catch (e) {
+      debugPrint('Send message error: $e');
       throw Exception('Failed to send message: $e');
     }
   }
 
-  bool get isConnected => !_isDisposed && _channel?.sink != null;
-
   void dispose() {
-    _isDisposed = true;
+    _isConnected = false;
     _channel?.sink.close();
     _channel = null;
   }
