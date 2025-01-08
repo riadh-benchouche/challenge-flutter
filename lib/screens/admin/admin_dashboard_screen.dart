@@ -1,30 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import '../../providers/user_provider.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
-
-  Future<void> _handleLogout(BuildContext context) async {
-    try {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      await userProvider.logout();
-      if (context.mounted) {
-        // Redirection vers la page de login après déconnexion
-        context.go('/login');  // ou context.go('/') selon votre configuration
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors de la déconnexion'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +30,7 @@ class AdminDashboardScreen extends StatelessWidget {
                 textStyle: const TextStyle(fontSize: 16),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: () {
                 context.go('/admin/dashboard/pending-associations');
@@ -67,15 +45,20 @@ class AdminDashboardScreen extends StatelessWidget {
                 textStyle: const TextStyle(fontSize: 16),
               ),
             ),
-            const SizedBox(height: 40),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-                side: BorderSide(color: Theme.of(context).primaryColor),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                context.go('/admin/categories');
+              },
+              icon: const Icon(Icons.category),
+              label: const Text('CRUD Catégories'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                textStyle: const TextStyle(fontSize: 16),
               ),
-              onPressed: () => _handleLogout(context),
-              icon: const Icon(Icons.logout),
-              label: const Text('Déconnexion'),
             ),
           ],
         ),
