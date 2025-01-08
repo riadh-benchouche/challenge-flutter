@@ -21,14 +21,18 @@ class PaginatedResponse<T> {
     required this.rows,
   });
 
-  factory PaginatedResponse.fromJson(Map<String, dynamic> json, T Function(Map<String, dynamic>) fromJson) {
+  factory PaginatedResponse.fromJson(
+      Map<String, dynamic> json, T Function(Map<String, dynamic>) fromJson) {
     return PaginatedResponse(
       limit: json['limit'] ?? 0,
       page: json['page'] ?? 1,
       sort: json['sort'] ?? '',
       total: json['total'] ?? 0,
       pages: json['pages'] ?? 0,
-      rows: (json['rows'] as List<dynamic>?)?.map((item) => fromJson(item as Map<String, dynamic>)).toList() ?? [],
+      rows: (json['rows'] as List<dynamic>?)
+              ?.map((item) => fromJson(item as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 }
@@ -40,9 +44,9 @@ class EventService {
   EventService({required this.baseUrl, this.token});
 
   Map<String, String> get headers => {
-    'Content-Type': 'application/json',
-    if (token != null) 'Authorization': 'Bearer $token',
-  };
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
 
   Future<List<Event>> getAssociationEvents() async {
     try {
@@ -55,11 +59,12 @@ class EventService {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         final paginatedResponse = PaginatedResponse.fromJson(
           jsonData,
-              (json) => Event.fromJson(json),
+          (json) => Event.fromJson(json),
         );
         return paginatedResponse.rows;
       } else {
-        throw Exception('Échec du chargement des événements : ${response.body}');
+        throw Exception(
+            'Échec du chargement des événements : ${response.body}');
       }
     } catch (e) {
       debugPrint('Error in getAssociationEvents: $e');
@@ -79,11 +84,12 @@ class EventService {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         final paginatedResponse = PaginatedResponse.fromJson(
           jsonData,
-              (json) => Event.fromJson(json),
+          (json) => Event.fromJson(json),
         );
         return paginatedResponse.rows;
       } else {
-        throw Exception('Échec du chargement des événements : ${response.body}');
+        throw Exception(
+            'Échec du chargement des événements : ${response.body}');
       }
     } catch (e) {
       debugPrint('Error in getParticipatingEvents: $e');
@@ -128,7 +134,8 @@ class EventService {
     }
   }
 
-  Future<void> toggleEventParticipation(String eventId, bool isAttending) async {
+  Future<void> toggleEventParticipation(
+      String eventId, bool isAttending) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/events/$eventId/user-event-participation'),
@@ -171,11 +178,12 @@ class EventService {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         final paginatedResponse = PaginatedResponse<CategoryModel>.fromJson(
           jsonData,
-              (json) => CategoryModel.fromJson(json),
+          (json) => CategoryModel.fromJson(json),
         );
         return paginatedResponse.rows;
       } else {
-        throw Exception('Échec du chargement des catégories : ${response.body}');
+        throw Exception(
+            'Échec du chargement des catégories : ${response.body}');
       }
     } catch (e) {
       debugPrint('Error in getCategories: $e');
@@ -190,8 +198,7 @@ class EventService {
     required String location,
     required String categoryId,
     required String associationId,
-  }) async
-  {
+  }) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/events'),
@@ -210,10 +217,47 @@ class EventService {
         return Event.fromJson(jsonDecode(response.body));
       } else {
         final errorData = jsonDecode(response.body);
-        throw Exception(errorData['message'] ?? 'Échec de la création de l\'événement');
+        throw Exception(
+            errorData['message'] ?? 'Échec de la création de l\'événement');
       }
     } catch (e) {
       debugPrint('Error in createEvent: $e');
+      rethrow;
+    }
+  }
+
+  Future<Event> updateEvent({
+    required String eventId,
+    required String name,
+    required String description,
+    required DateTime date,
+    required String location,
+    required String categoryId,
+    required String associationId
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/events/$eventId'),
+        headers: headers,
+        body: jsonEncode({
+          'name': name,
+          'description': description,
+          'date': date.toUtc().toIso8601String(),
+          'location': location,
+          'category_id': categoryId,
+          'association_id': associationId
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return Event.fromJson(jsonDecode(response.body));
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(
+            errorData['message'] ?? 'Impossible de mettre à jour l\'événement');
+      }
+    } catch (e) {
+      debugPrint('Error in updateEvent: $e');
       rethrow;
     }
   }

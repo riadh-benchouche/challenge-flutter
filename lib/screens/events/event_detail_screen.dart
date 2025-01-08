@@ -1,8 +1,10 @@
 import 'package:challenge_flutter/models/event.dart';
 import 'package:challenge_flutter/providers/event_provider.dart';
+import 'package:challenge_flutter/providers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 
 class EventDetailScreen extends StatefulWidget {
   final String eventId;
@@ -135,6 +137,29 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         ),
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          Consumer<UserProvider>(
+            builder: (context, userProvider, _) {
+              return FutureBuilder<Event>(
+                future: _eventFuture,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const SizedBox.shrink();
+                  final event = snapshot.data!;
+
+                  if (userProvider.userData?['role'] == 'association_leader') {
+                    return IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.white),
+                      onPressed: () {
+                        context.go('/edit-event/${event.id}');
+                      },
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              );
+            },
+          ),
+        ],
       ),
       body: FutureBuilder<Event>(
         future: _eventFuture,
