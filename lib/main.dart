@@ -3,6 +3,7 @@ import 'package:challenge_flutter/providers/home_provider.dart';
 import 'package:challenge_flutter/providers/message_provider.dart';
 import 'package:challenge_flutter/providers/category_provider.dart';
 import 'package:challenge_flutter/screens/associations/create_association_screen.dart';
+import 'package:challenge_flutter/screens/associations/edit_association_screen.dart';
 import 'package:challenge_flutter/screens/events/create_event_screen.dart';
 import 'package:challenge_flutter/screens/layout/admin_layout.dart';
 import 'package:challenge_flutter/screens/layout/main_layout.dart';
@@ -135,28 +136,28 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/',
       pageBuilder: (BuildContext context, GoRouterState state) =>
-          const MaterialPage(
+          const NoTransitionPage(
         child: MainLayout(initialIndex: 0),
       ),
       routes: <RouteBase>[
         GoRoute(
           path: 'login',
           pageBuilder: (BuildContext context, GoRouterState state) =>
-              MaterialPage(
+              NoTransitionPage(
             child: LoginScreen(controller: PageController()),
           ),
         ),
         GoRoute(
           path: 'register',
           pageBuilder: (BuildContext context, GoRouterState state) =>
-              MaterialPage(
+              NoTransitionPage(
             child: SignupScreen(controller: PageController()),
           ),
         ),
         GoRoute(
           path: '/admin',
           pageBuilder: (BuildContext context, GoRouterState state) =>
-              MaterialPage(
+              NoTransitionPage(
             child: AdminLayout(
               child: AdminDashboardScreen(),
             ),
@@ -165,7 +166,7 @@ final GoRouter _router = GoRouter(
             GoRoute(
               path: 'users',
               pageBuilder: (BuildContext context, GoRouterState state) =>
-                  const MaterialPage(
+                  const NoTransitionPage(
                 child: AdminLayout(
                   child: ManageUsersScreen(),
                 ),
@@ -174,7 +175,7 @@ final GoRouter _router = GoRouter(
             GoRoute(
               path: 'pending-associations',
               pageBuilder: (BuildContext context, GoRouterState state) =>
-                  const MaterialPage(
+                  const NoTransitionPage(
                 child: AdminLayout(
                   child: PendingAssociationsScreen(),
                 ),
@@ -183,7 +184,7 @@ final GoRouter _router = GoRouter(
             GoRoute(
               path: 'categories',
               pageBuilder: (BuildContext context, GoRouterState state) =>
-                  const MaterialPage(
+                  const NoTransitionPage(
                 child: AdminLayout(
                   child: ManageCategoriesScreen(),
                 ),
@@ -194,21 +195,21 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: 'events',
           pageBuilder: (BuildContext context, GoRouterState state) =>
-              const MaterialPage(
+              const NoTransitionPage(
             child: MainLayout(initialIndex: 1),
           ),
           routes: <RouteBase>[
             GoRoute(
               path: 'create-event',
               pageBuilder: (BuildContext context, GoRouterState state) =>
-                  const MaterialPage(
+                  const NoTransitionPage(
                 child: CreateEventScreen(),
               ),
             ),
             GoRoute(
               path: ':eventId',
               pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(
+                  NoTransitionPage(
                 child: EventDetailScreen(
                     eventId: state.pathParameters['eventId']!),
               ),
@@ -218,8 +219,14 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: 'profile',
           pageBuilder: (BuildContext context, GoRouterState state) =>
-              const MaterialPage(
+              const NoTransitionPage(
             child: ProfileScreen(),
+          ),
+        ),
+        GoRoute(
+          path: '/edit-association/:id',
+          builder: (context, state) => EditAssociationScreen(
+            associationId: state.pathParameters['id']!,
           ),
         ),
         GoRoute(
@@ -229,28 +236,28 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: 'join-association',
           pageBuilder: (BuildContext context, GoRouterState state) =>
-              const MaterialPage(
+              const NoTransitionPage(
             child: JoinAssociationScreen(),
           ),
         ),
         GoRoute(
           path: 'associations',
           pageBuilder: (BuildContext context, GoRouterState state) =>
-              const MaterialPage(
+              const NoTransitionPage(
             child: MainLayout(initialIndex: 2),
           ),
           routes: <RouteBase>[
             GoRoute(
               path: 'create-association',
               pageBuilder: (BuildContext context, GoRouterState state) =>
-                  const MaterialPage(
+                  const NoTransitionPage(
                 child: CreateAssociationScreen(),
               ),
             ),
             GoRoute(
               path: ':associationId',
               pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(
+                  NoTransitionPage(
                 child: AssociationDetailScreen(
                     associationId: state.pathParameters['associationId']!),
               ),
@@ -260,16 +267,17 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: 'messages',
           pageBuilder: (BuildContext context, GoRouterState state) =>
-              const MaterialPage(
+              const NoTransitionPage(
             child: MainLayout(initialIndex: 3),
           ),
           routes: <RouteBase>[
             GoRoute(
               path: ':roomId',
               pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(
+                  NoTransitionPage(
                 child: MessageDetailScreen(
-                    roomId: state.pathParameters['roomId']!),
+                  roomId: state.pathParameters['roomId']!,
+                ),
               ),
             ),
           ],

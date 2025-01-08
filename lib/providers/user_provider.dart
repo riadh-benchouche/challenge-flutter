@@ -62,7 +62,8 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _saveAuthData(String token, Map<String, dynamic> userData) async {
+  Future<void> _saveAuthData(
+      String token, Map<String, dynamic> userData) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(TOKEN_KEY, token);
@@ -91,10 +92,10 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<http.Response> authenticatedRequest(
-      String endpoint, {
-        String method = 'GET',
-        Map<String, dynamic>? body,
-      }) async {
+    String endpoint, {
+    String method = 'GET',
+    Map<String, dynamic>? body,
+  }) async {
     final url = Uri.parse('$_baseUrl$endpoint');
 
     final headers = {
@@ -218,7 +219,6 @@ class UserProvider extends ChangeNotifier {
       throw Exception('Erreur d\'inscription: ${error.toString()}');
     }
   }
-
 
   Future<void> logout() async {
     _isLoggedIn = false;

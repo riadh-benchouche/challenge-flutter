@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:challenge_flutter/models/association.dart';
 import 'package:challenge_flutter/services/api_service.dart';
@@ -54,9 +56,6 @@ class AssociationProvider with ChangeNotifier {
 
   Future<Association> fetchAssociationById(String id) async {
     try {
-      debugPrint('Fetching association with id: $id');
-      debugPrint('Token: ${userProvider.token}');
-
       _initApiService();
       final association = await _apiService.getAssociationById(id);
       _currentAssociation = association;
@@ -112,6 +111,37 @@ class AssociationProvider with ChangeNotifier {
       _associations = ownerAssociations;
       notifyListeners();
       return ownerAssociations;
+    } catch (error) {
+      if (error.toString().contains('Session expirée')) {
+        await userProvider.logout();
+      }
+      rethrow;
+    }
+  }
+
+  Future<Association> updateAssociation(String id, String name, String description) async {
+    try {
+      _initApiService();
+      final association = await _apiService.updateAssociation(id, name, description);
+      // Rafraîchir la liste des associations après la mise à jour
+      await fetchAssociations();
+      notifyListeners();
+      return association;
+    } catch (error) {
+      if (error.toString().contains('Session expirée')) {
+        await userProvider.logout();
+      }
+      rethrow;
+    }
+  }
+
+  Future<Association> uploadAssociationImage(String id, File image) async {
+    try {
+      _initApiService();
+      final association = await _apiService.uploadAssociationImage(id, image);
+      await fetchAssociationById(id);
+      notifyListeners();
+      return association;
     } catch (error) {
       if (error.toString().contains('Session expirée')) {
         await userProvider.logout();
