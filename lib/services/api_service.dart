@@ -98,6 +98,23 @@ class ApiService {
     }
   }
 
+  Future<List<Association>> getAssociationsAll() async {
+    final response = await _handleResponse(() =>
+        http.get(Uri.parse('$baseUrl/associations/all'), headers: headers));
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonData = jsonDecode(response.body);
+      final paginatedResponse = PaginatedResponse.fromJson(
+        jsonData,
+        (json) => Association.fromJson(json),
+      );
+      return paginatedResponse.rows;
+    } else {
+      throw Exception(
+          'Échec du chargement des associations : ${response.body}');
+    }
+  }
+
   Future<Association> getAssociationById(String id) async {
     final response = await _handleResponse(() =>
         http.get(Uri.parse('$baseUrl/associations/$id'), headers: headers));
@@ -126,15 +143,16 @@ class ApiService {
     throw Exception(
         'Impossible de rejoindre l\'association : ${response.body}');
   }
+
   Future<Association> createAssociation(String name, String description) async {
     final response = await _handleResponse(() => http.post(
-      Uri.parse('$baseUrl/associations'),
-      headers: headers,
-      body: jsonEncode({
-        'name': name,
-        'description': description,
-      }),
-    ));
+          Uri.parse('$baseUrl/associations'),
+          headers: headers,
+          body: jsonEncode({
+            'name': name,
+            'description': description,
+          }),
+        ));
 
     if (response.statusCode == 201 || response.statusCode == 200) {
       return Association.fromJson(jsonDecode(response.body));
@@ -143,9 +161,31 @@ class ApiService {
     throw Exception('Impossible de créer l\'association : ${response.body}');
   }
 
+  Future<void> updateAssociation(String id, String name, String description,
+      bool isActive, String code) async {
+    final response = await _handleResponse(() => http.put(
+          Uri.parse('$baseUrl/associations/$id'),
+          headers: headers,
+          body: jsonEncode({
+            'name': name,
+            'description': description,
+            'is_active': isActive,
+            'code': code,
+          }),
+        ));
+
+    if (response.statusCode == 200) {
+      return;
+    }
+
+    throw Exception(
+        'Impossible de mettre à jour l\'association : ${response.body}');
+  }
+
   Future<List<Association>> getAssociationByOwner(String ownerId) async {
-    final response = await _handleResponse(() =>
-        http.get(Uri.parse('$baseUrl/users/$ownerId/owner-associations'), headers: headers));
+    final response = await _handleResponse(() => http.get(
+        Uri.parse('$baseUrl/users/$ownerId/owner-associations'),
+        headers: headers));
 
     if (response.statusCode == 200) {
       final List<dynamic> jsonData = jsonDecode(response.body);

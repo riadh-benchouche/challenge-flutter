@@ -7,6 +7,7 @@ class AssociationProvider with ChangeNotifier {
   final UserProvider userProvider;
   late ApiService _apiService;
   List<Association>? _associations;
+  List<Association>? _associationsAll;
   Association? _currentAssociation;
 
   AssociationProvider({required this.userProvider}) {
@@ -22,11 +23,13 @@ class AssociationProvider with ChangeNotifier {
 
   List<Association>? get associations => _associations;
   Association? get currentAssociation => _currentAssociation;
+  List<Association>? get associationsAll => _associationsAll;
 
   Future<List<Association>> fetchAssociationByUser() async {
     try {
       _initApiService();
-      _associations = (await _apiService.getAssociationsByUser(userProvider.userData!['id'])) as List<Association>?;
+      _associations = (await _apiService.getAssociationsByUser(
+          userProvider.userData!['id'])) as List<Association>?;
       notifyListeners();
       return _associations!;
     } catch (error) {
@@ -44,6 +47,21 @@ class AssociationProvider with ChangeNotifier {
       _associations = await _apiService.getAssociations();
       notifyListeners();
       return _associations!;
+    } catch (error) {
+      if (error.toString().contains('Session expirée')) {
+        await userProvider.logout();
+      }
+      throw error;
+    }
+  }
+
+  Future<List<Association>> fetchAssociationsAll() async {
+    try {
+      // Réinitialiser le service API pour avoir le dernier token
+      _initApiService();
+      _associationsAll = await _apiService.getAssociationsAll();
+      notifyListeners();
+      return _associationsAll!;
     } catch (error) {
       if (error.toString().contains('Session expirée')) {
         await userProvider.logout();
@@ -92,7 +110,8 @@ class AssociationProvider with ChangeNotifier {
   Future<Association> createAssociation(String name, String description) async {
     try {
       _initApiService();
-      final association = await _apiService.createAssociation(name, description);
+      final association =
+          await _apiService.createAssociation(name, description);
       // Rafraîchir la liste des associations après la création
       await fetchAssociations();
       notifyListeners();
@@ -105,10 +124,31 @@ class AssociationProvider with ChangeNotifier {
     }
   }
 
+  Future<void> updateAssociation(
+      String id, Map<String, dynamic> associationData) async {
+    try {
+      final response = await userProvider.authenticatedRequest(
+        '/associations/$id',
+        method: 'PUT',
+        body: associationData,
+      );
+
+      if (response.statusCode == 200) {
+        await fetchAssociationsAll();
+      } else {
+        throw Exception('Erreur lors de la mise à jour de l\'association');
+      }
+    } catch (error) {
+      debugPrint('Erreur updateAssociation : $error');
+      rethrow;
+    }
+  }
+
   Future<List<Association>> fetchAssociationByOwner() async {
     try {
       _initApiService();
-      List<Association> ownerAssociations = await _apiService.getAssociationByOwner(userProvider.userData!['id']);
+      List<Association> ownerAssociations =
+          await _apiService.getAssociationByOwner(userProvider.userData!['id']);
       _associations = ownerAssociations;
       notifyListeners();
       return ownerAssociations;
