@@ -4,6 +4,7 @@ import 'package:challenge_flutter/providers/message_provider.dart';
 import 'package:challenge_flutter/providers/category_provider.dart';
 import 'package:challenge_flutter/screens/associations/create_association_screen.dart';
 import 'package:challenge_flutter/screens/events/create_event_screen.dart';
+import 'package:challenge_flutter/screens/layout/admin_layout.dart';
 import 'package:challenge_flutter/screens/layout/main_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -54,7 +55,7 @@ Future<void> main() async {
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
           update: (context, userProvider, previous) =>
-          userProvider.token != null
+          userProvider.token != null && userProvider.userData != null
               ? AssociationProvider(userProvider: userProvider)
               : previous ?? AssociationProvider(userProvider: userProvider),
         ),
@@ -63,7 +64,7 @@ Future<void> main() async {
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
           update: (context, userProvider, previous) =>
-          userProvider.token != null
+          userProvider.token != null && userProvider.userData != null
               ? EventProvider(userProvider: userProvider)
               : previous ?? EventProvider(userProvider: userProvider),
         ),
@@ -72,7 +73,7 @@ Future<void> main() async {
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
           update: (context, userProvider, previous) =>
-          userProvider.token != null
+          userProvider.token != null && userProvider.userData != null
               ? HomeProvider(userProvider: userProvider)
               : previous ?? HomeProvider(userProvider: userProvider),
         ),
@@ -81,7 +82,7 @@ Future<void> main() async {
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
           update: (context, userProvider, previous) =>
-          userProvider.token != null
+          userProvider.token != null && userProvider.userData != null
               ? MessageProvider(userProvider: userProvider)
               : previous ?? MessageProvider(userProvider: userProvider),
         ),
@@ -93,6 +94,7 @@ Future<void> main() async {
 
 final GoRouter _router = GoRouter(
   redirect: (BuildContext context, GoRouterState state) {
+    // Accès au UserProvider pour vérifier si l'utilisateur est connecté
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     if (!userProvider.initialized) return null;
@@ -123,13 +125,18 @@ final GoRouter _router = GoRouter(
       return '/';
     }
 
+    if (state.uri.toString().startsWith('/admin') && !isAdmin) {
+      return '/'; // Redirige les non-admins vers l'accueil
+    }
+
+    // Pas de redirection nécessaire
     return null;
   },
   routes: <RouteBase>[
     GoRoute(
       path: '/',
       pageBuilder: (BuildContext context, GoRouterState state) =>
-      const MaterialPage(
+          const MaterialPage(
         child: MainLayout(initialIndex: 0),
       ),
       routes: <RouteBase>[
@@ -148,7 +155,7 @@ final GoRouter _router = GoRouter(
               ),
         ),
         GoRoute(
-          path: 'admin',
+          path: '/admin',
           pageBuilder: (BuildContext context, GoRouterState state) =>
               MaterialPage(
                 child: AdminLayout(
@@ -208,6 +215,41 @@ final GoRouter _router = GoRouter(
                   ),
             ),
           ],
+        ),
+        GoRoute(
+          path: 'messages',
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              const MaterialPage(
+            child: MainLayout(initialIndex: 3),
+          ),
+          routes: <RouteBase>[
+            GoRoute(
+              path: ':roomId',
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+                  MaterialPage(
+                child: MessageDetailScreen(
+                    roomId: state.pathParameters['roomId']!),
+              ),
+            ),
+          ],
+        ),
+        GoRoute(
+          path: 'profile',
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              const MaterialPage(
+            child: ProfileScreen(),
+          ),
+        ),
+        GoRoute(
+          path: '/edit-profile',
+          builder: (context, state) => const EditProfileScreen(),
+        ),
+        GoRoute(
+          path: 'join-association',
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              const MaterialPage(
+            child: JoinAssociationScreen(),
+          ),
         ),
         GoRoute(
           path: 'associations',

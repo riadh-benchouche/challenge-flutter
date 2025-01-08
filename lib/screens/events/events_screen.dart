@@ -13,13 +13,9 @@ class EventScreen extends StatefulWidget {
 }
 
 class _EventScreenState extends State<EventScreen>
-    with
-        SingleTickerProviderStateMixin,
-        AutomaticKeepAliveClientMixin,
-        WidgetsBindingObserver {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   late TabController _tabController;
-  late FocusNode _focusNode;
-  bool _isFirstLoad = true;
+  FocusNode _focusNode = FocusNode(); // Initialisation directe
 
   @override
   bool get wantKeepAlive => true;
@@ -27,14 +23,24 @@ class _EventScreenState extends State<EventScreen>
   @override
   void initState() {
     super.initState();
-    debugPrint('EventScreen - initState');
     _tabController = TabController(length: 2, vsync: this);
-    _focusNode = FocusNode();
     WidgetsBinding.instance.addObserver(this);
-    _loadEvents();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final eventProvider = Provider.of<EventProvider>(context, listen: false);
+        if (eventProvider.shouldSwitchToParticipating) {
+          _tabController.animateTo(1);
+          eventProvider.resetSwitchFlag();
+        }
+        _loadEvents();
+      }
+    });
 
     _tabController.addListener(() {
-      _loadEvents();
+      if (!_tabController.indexIsChanging && mounted) {
+        _loadEvents();
+      }
     });
   }
 
@@ -46,36 +52,18 @@ class _EventScreenState extends State<EventScreen>
     super.dispose();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Ne charger qu'au premier appel de didChangeDependencies
-    if (_isFirstLoad) {
-      final eventProvider = Provider.of<EventProvider>(context);
-      if (eventProvider.shouldSwitchToParticipating) {
-        _tabController.animateTo(1);
-        eventProvider.resetSwitchFlag();
-      }
-      _loadEvents();
-      _isFirstLoad = false;
-    }
-  }
-
-  void _loadEvents() async {
+  Future<void> _loadEvents() async {
     if (!mounted) return;
-    final eventProvider = Provider.of<EventProvider>(context, listen: false);
 
-    // Charger en fonction de l'onglet actif
-    if (_tabController.index == 0) {
-      // Onglet "Les Événements"
-      if (!eventProvider.isLoadingAssociations) {
+    final eventProvider = Provider.of<EventProvider>(context, listen: false);
+    try {
+      if (_tabController.index == 0) {
         await eventProvider.fetchAssociationEvents();
-      }
-    } else {
-      // Onglet "Mes participations"
-      if (!eventProvider.isLoadingParticipations) {
+      } else {
         await eventProvider.fetchParticipatingEvents();
       }
+    } catch (e) {
+      debugPrint('Error loading events: $e');
     }
   }
 
@@ -182,13 +170,12 @@ class _EventScreenState extends State<EventScreen>
         ),
         floatingActionButton: eventProvider.canCreateEvent
             ? FloatingActionButton.extended(
-                heroTag: 'createEventFAB',
-                // Ajout du heroTag unique
-                onPressed: () => context.go('/events/create-event'),
-                backgroundColor: theme.primaryColor,
-                icon: const Icon(Icons.add),
-                label: const Text('Nouvel événement'),
-              )
+          heroTag: 'createEventFAB',
+          onPressed: () => context.go('/events/create-event'),
+          backgroundColor: theme.primaryColor,
+          icon: const Icon(Icons.add),
+          label: const Text('Nouvel événement'),
+        )
             : null,
       ),
     );
