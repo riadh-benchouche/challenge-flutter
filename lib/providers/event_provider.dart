@@ -18,7 +18,7 @@ class EventProvider with ChangeNotifier {
   bool _shouldSwitchToParticipating = false;
 
   EventProvider({required this.userProvider}) {
-    _initEventService();
+    initEventService();
   }
 
   bool get shouldSwitchToParticipating => _shouldSwitchToParticipating;
@@ -27,7 +27,7 @@ class EventProvider with ChangeNotifier {
     _shouldSwitchToParticipating = false;
   }
 
-  void _initEventService() {
+  void initEventService() {
     _eventService = EventService(
       baseUrl: userProvider.baseUrl,
       token: userProvider.token,
@@ -50,7 +50,7 @@ class EventProvider with ChangeNotifier {
       _isLoadingAssociations = true;
       notifyListeners();  // Notifier pour afficher le loading
 
-      _initEventService();
+      initEventService();
       _associationEvents = await _eventService.getAssociationEvents();
       return _associationEvents!;
     } catch (error) {
@@ -72,7 +72,7 @@ class EventProvider with ChangeNotifier {
       _isLoadingParticipations = true;
       notifyListeners();  // Notifier pour afficher le loading
 
-      _initEventService();
+      initEventService();
       _participatingEvents = await _eventService.getParticipatingEvents();
       return _participatingEvents!;
     } catch (error) {
@@ -88,7 +88,7 @@ class EventProvider with ChangeNotifier {
 
   Future<Event> fetchEventById(String id) async {
     try {
-      _initEventService();
+      initEventService();
       _currentEvent = await _eventService.getEventById(id);
       notifyListeners();
       return _currentEvent!;
@@ -102,7 +102,7 @@ class EventProvider with ChangeNotifier {
 
   Future<bool> checkParticipation(String eventId) async {
     try {
-      _initEventService();
+      initEventService();
       return await _eventService.checkEventParticipation(eventId);
     } catch (error) {
       if (error.toString().contains('Session expirée')) {
@@ -116,7 +116,7 @@ class EventProvider with ChangeNotifier {
 
   Future<void> toggleParticipation(String eventId, bool isAttending) async {
     try {
-      _initEventService();
+      initEventService();
       await _eventService.toggleEventParticipation(eventId, isAttending);
 
       if (isAttending) {
@@ -146,7 +146,7 @@ class EventProvider with ChangeNotifier {
   Future<Event> createEvent(String name, String description, DateTime date,
       String location, String categoryId, String associationId) async {
     try {
-      _initEventService();
+      initEventService();
       final event = await _eventService.createEvent(
         name: name,
         description: description,
@@ -171,7 +171,7 @@ class EventProvider with ChangeNotifier {
 
   Future<List<CategoryModel>> fetchCategories() async {
     try {
-      _initEventService();
+      initEventService();
       _categories = await _eventService.getCategories();
       notifyListeners();
       return _categories!;

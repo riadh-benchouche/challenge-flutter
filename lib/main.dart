@@ -45,51 +45,75 @@ Future<void> main() async {
           create: (context) => CategoryProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
-          update: (context, userProvider, previous) => CategoryProvider(
-            userProvider: userProvider,
-          ),
+          update: (context, userProvider, previous) => updateProvider(context,
+              userProvider, (u) => CategoryProvider(userProvider: u), previous),
         ),
 
         ChangeNotifierProxyProvider<UserProvider, AssociationProvider>(
-          create: (context) => AssociationProvider(
-            userProvider: Provider.of<UserProvider>(context, listen: false),
-          ),
-          update: (context, userProvider, previous) =>
-              userProvider.token != null && userProvider.userData != null
-                  ? AssociationProvider(userProvider: userProvider)
-                  : previous ?? AssociationProvider(userProvider: userProvider),
-        ),
+            create: (context) => AssociationProvider(
+                  userProvider:
+                      Provider.of<UserProvider>(context, listen: false),
+                ),
+            update: (context, userProvider, previous) {
+              final provider =
+                  previous ?? AssociationProvider(userProvider: userProvider);
+              if (previous == null) provider.initApiService();
+              return provider;
+            }),
+
         ChangeNotifierProxyProvider<UserProvider, EventProvider>(
-          create: (context) => EventProvider(
-            userProvider: Provider.of<UserProvider>(context, listen: false),
-          ),
-          update: (context, userProvider, previous) =>
-              userProvider.token != null && userProvider.userData != null
-                  ? EventProvider(userProvider: userProvider)
-                  : previous ?? EventProvider(userProvider: userProvider),
-        ),
+            create: (context) => EventProvider(
+                  userProvider:
+                      Provider.of<UserProvider>(context, listen: false),
+                ),
+            update: (context, userProvider, previous) {
+              final provider =
+                  previous ?? EventProvider(userProvider: userProvider);
+              if (previous == null) provider.initEventService();
+              return provider;
+            }),
         ChangeNotifierProxyProvider<UserProvider, HomeProvider>(
           create: (context) => HomeProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
-          update: (context, userProvider, previous) =>
-              userProvider.token != null && userProvider.userData != null
-                  ? HomeProvider(userProvider: userProvider)
-                  : previous ?? HomeProvider(userProvider: userProvider),
+          update: (context, userProvider, previous) {
+            final provider =
+                previous ?? HomeProvider(userProvider: userProvider);
+            if (previous == null) {
+              provider.initHomeService();
+            }
+            return provider;
+          },
         ),
+
         ChangeNotifierProxyProvider<UserProvider, MessageProvider>(
           create: (context) => MessageProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
-          update: (context, userProvider, previous) =>
-              userProvider.token != null && userProvider.userData != null
-                  ? MessageProvider(userProvider: userProvider)
-                  : previous ?? MessageProvider(userProvider: userProvider),
+          update: (context, userProvider, previous) {
+            final provider =
+                previous ?? MessageProvider(userProvider: userProvider);
+            if (previous == null) {
+              provider.initWebSocket();
+            }
+            return provider;
+          },
         ),
       ],
       child: const MyApp(),
     ),
   );
+}
+
+T updateProvider<T extends ChangeNotifier>(
+  BuildContext context,
+  UserProvider userProvider,
+  T Function(UserProvider) createProvider,
+  T? previous,
+) {
+  return userProvider.token != null && userProvider.userData != null
+      ? createProvider(userProvider)
+      : previous ?? createProvider(userProvider);
 }
 
 final GoRouter _router = GoRouter(
@@ -126,10 +150,9 @@ final GoRouter _router = GoRouter(
     }
 
     if (state.uri.toString().startsWith('/admin') && !isAdmin) {
-      return '/'; // Redirige les non-admins vers l'accueil
+      return '/';
     }
 
-    // Pas de redirection nécessaire
     return null;
   },
   routes: <RouteBase>[
@@ -157,7 +180,7 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: '/admin',
           pageBuilder: (BuildContext context, GoRouterState state) =>
-              NoTransitionPage(
+              const NoTransitionPage(
             child: AdminLayout(
               child: AdminDashboardScreen(),
             ),
