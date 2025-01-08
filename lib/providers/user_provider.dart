@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,18 +10,15 @@ class UserProvider extends ChangeNotifier {
   static const String USER_DATA_KEY = 'user_data';
   static const String IS_LOGGED_IN_KEY = 'is_logged_in';
   bool _initialized = false;
+
   bool get initialized => _initialized;
 
   String get _baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:3000'; // URL de l'API pour le Web
-    } else if (Platform.isAndroid) {
-      return 'http://10.0.2.2:3000'; // URL de l'API pour l'émulateur Android
-    } else if (Platform.isIOS) {
-      return 'http://127.0.0.1:3000'; // URL de l'API pour l'émulateur iOS
-    } else {
-      return 'http://localhost:3000'; // Autres plateformes (desktop)
-    }
+    return 'https://invooce.online';
+  }
+
+  bool get isAdmin {
+    return _userData != null && _userData!['role'] == 'admin';
   }
 
   bool _isLoggedIn = false;
@@ -30,8 +26,11 @@ class UserProvider extends ChangeNotifier {
   Map<String, dynamic>? _userData;
 
   String get baseUrl => _baseUrl;
+
   bool get isLoggedIn => _isLoggedIn;
+
   String? get token => _token;
+
   Map<String, dynamic>? get userData => _userData;
 
   UserProvider();
@@ -53,6 +52,9 @@ class UserProvider extends ChangeNotifier {
 
       if (_token != null && userDataString != null) {
         _userData = jsonDecode(userDataString);
+        if (_userData != null && _userData!.containsKey('role')) {
+          _userData!['role'] = _userData!['role'];
+        }
         _isLoggedIn = true; // S'assurer que isLoggedIn est à true
       }
     } catch (e) {
@@ -69,6 +71,12 @@ class UserProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Erreur lors de la sauvegarde des données: $e');
     }
+  }
+
+  void updateUserData(Map<String, dynamic> newData) {
+    _userData = newData;
+    _saveAuthData(_token!, _userData!);
+    notifyListeners();
   }
 
   Future<void> _clearAuthData() async {
@@ -148,6 +156,10 @@ class UserProvider extends ChangeNotifier {
         final data = jsonDecode(response.body);
         _token = data['token'];
         _userData = data['user'];
+        if (_userData != null && _userData!.containsKey('role')) {
+          _userData!['role'] = data['user']['role'];
+        }
+
         _isLoggedIn = true;
         await _saveAuthData(_token!, _userData!);
         notifyListeners();
@@ -160,7 +172,8 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> register(String name, String email, String password, BuildContext context) async {
+  Future<void> register(
+      String name, String email, String password, BuildContext context) async {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/auth/register'),
@@ -213,5 +226,17 @@ class UserProvider extends ChangeNotifier {
     _userData = null;
     await _clearAuthData();
     notifyListeners();
+  }
+
+  Future<void> refreshUserData() async {
+    try {
+      final response = await authenticatedRequest('/me');
+      if (response.statusCode == 200) {
+        final newData = jsonDecode(response.body);
+        updateUserData(newData);
+      }
+    } catch (e) {
+      debugPrint('Erreur refresh user data: $e');
+    }
   }
 }

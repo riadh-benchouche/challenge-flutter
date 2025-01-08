@@ -3,6 +3,7 @@ import 'package:challenge_flutter/providers/home_provider.dart';
 import 'package:challenge_flutter/providers/message_provider.dart';
 import 'package:challenge_flutter/screens/associations/create_association_screen.dart';
 import 'package:challenge_flutter/screens/events/create_event_screen.dart';
+import 'package:challenge_flutter/screens/layout/admin_layout.dart';
 import 'package:challenge_flutter/screens/layout/main_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -17,8 +18,12 @@ import 'screens/events/event_detail_screen.dart';
 import 'screens/associations/association_detail_screen.dart';
 import 'screens/messages/message_detail_screen.dart';
 import 'screens/profile/profile_screen.dart';
+import 'screens/edit_profile/edit_profile_screen.dart';
 import 'screens/associations/join_association_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'screens/admin/admin_dashboard_screen.dart';
+import 'screens/admin/manage_users_screen.dart';
+import 'screens/admin/pending_associations_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,36 +42,36 @@ Future<void> main() async {
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
           update: (context, userProvider, previous) =>
-              userProvider.token != null
-                  ? AssociationProvider(userProvider: userProvider)
-                  : previous ?? AssociationProvider(userProvider: userProvider),
+          userProvider.token != null && userProvider.userData != null
+              ? AssociationProvider(userProvider: userProvider)
+              : previous ?? AssociationProvider(userProvider: userProvider),
         ),
         ChangeNotifierProxyProvider<UserProvider, EventProvider>(
           create: (context) => EventProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
           update: (context, userProvider, previous) =>
-              userProvider.token != null
-                  ? EventProvider(userProvider: userProvider)
-                  : previous ?? EventProvider(userProvider: userProvider),
+          userProvider.token != null && userProvider.userData != null
+              ? EventProvider(userProvider: userProvider)
+              : previous ?? EventProvider(userProvider: userProvider),
         ),
         ChangeNotifierProxyProvider<UserProvider, HomeProvider>(
           create: (context) => HomeProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
           update: (context, userProvider, previous) =>
-              userProvider.token != null
-                  ? HomeProvider(userProvider: userProvider)
-                  : previous ?? HomeProvider(userProvider: userProvider),
+          userProvider.token != null && userProvider.userData != null
+              ? HomeProvider(userProvider: userProvider)
+              : previous ?? HomeProvider(userProvider: userProvider),
         ),
         ChangeNotifierProxyProvider<UserProvider, MessageProvider>(
           create: (context) => MessageProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
           ),
           update: (context, userProvider, previous) =>
-              userProvider.token != null
-                  ? MessageProvider(userProvider: userProvider)
-                  : previous ?? MessageProvider(userProvider: userProvider),
+          userProvider.token != null && userProvider.userData != null
+              ? MessageProvider(userProvider: userProvider)
+              : previous ?? MessageProvider(userProvider: userProvider),
         ),
       ],
       child: const MyApp(),
@@ -82,6 +87,7 @@ final GoRouter _router = GoRouter(
     if (!userProvider.initialized) return null;
 
     final isLoggedIn = userProvider.isLoggedIn;
+    final isAdmin = userProvider.isAdmin;
 
     final isPublicRoute =
         state.uri.toString() == '/login' || state.uri.toString() == '/register';
@@ -90,8 +96,20 @@ final GoRouter _router = GoRouter(
       return '/login';
     }
 
+    if (isAdmin && state.uri.toString() == '/') {
+      return '/admin';
+    }
+
+    if (isAdmin && state.uri.toString().startsWith('/admin')) {
+      return null; // Pas de redirection nécessaire
+    }
+
     if (isLoggedIn && isPublicRoute) {
       return '/';
+    }
+
+    if (state.uri.toString().startsWith('/admin') && !isAdmin) {
+      return '/'; // Redirige les non-admins vers l'accueil
     }
 
     // Pas de redirection nécessaire
@@ -118,6 +136,45 @@ final GoRouter _router = GoRouter(
               MaterialPage(
             child: SignupScreen(controller: PageController()),
           ),
+        ),
+        GoRoute(
+          path: '/admin',
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              MaterialPage(
+            child: AdminLayout(
+              child: AdminDashboardScreen(),
+            ),
+          ),
+          routes: <RouteBase>[
+            GoRoute(
+              path: 'users',
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+                  const MaterialPage(
+                child: AdminLayout(
+                  child: ManageUsersScreen(),
+                ),
+              ),
+            ),
+            GoRoute(
+              path: 'pending-associations',
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+                  const MaterialPage(
+                child: AdminLayout(
+                  child: PendingAssociationsScreen(),
+                ),
+              ),
+            ),
+            GoRoute(
+              path: 'categories',
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+                  const MaterialPage(
+                child: AdminLayout(
+                  child: PendingAssociationsScreen(),
+                  // child: CategoriesScreen(),
+                ),
+              ),
+            ),
+          ],
         ),
         GoRoute(
           path: 'events',
@@ -192,6 +249,10 @@ final GoRouter _router = GoRouter(
           ),
         ),
         GoRoute(
+          path: '/edit-profile',
+          builder: (context, state) => const EditProfileScreen(),
+        ),
+        GoRoute(
           path: 'join-association',
           pageBuilder: (BuildContext context, GoRouterState state) =>
               const MaterialPage(
@@ -209,6 +270,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Association Manager',
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -221,6 +283,7 @@ class MyApp extends StatelessWidget {
       ],
       locale: const Locale('fr', 'FR'),
       theme: ThemeData(
+        useMaterial3: true,
         primaryColor: const Color(0xFF001B40),
         colorScheme: ColorScheme.fromSwatch().copyWith(
           secondary: const Color(0xFF00EAFF),

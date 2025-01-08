@@ -10,6 +10,8 @@ class EventProvider with ChangeNotifier {
   List<Event>? _associationEvents;
   List<Event>? _participatingEvents;
   List<CategoryModel>? _categories;
+  bool _isLoadingAssociations = false;
+  bool _isLoadingParticipations = false;
 
   List<CategoryModel>? get categories => _categories;
   Event? _currentEvent;
@@ -37,32 +39,50 @@ class EventProvider with ChangeNotifier {
   List<Event>? get participatingEvents => _participatingEvents;
 
   Event? get currentEvent => _currentEvent;
+  bool get isLoadingAssociations => _isLoadingAssociations;
+  bool get isLoadingParticipations => _isLoadingParticipations;
+
 
   Future<List<Event>> fetchAssociationEvents() async {
+    if (_isLoadingAssociations) return _associationEvents ?? [];
+
     try {
+      _isLoadingAssociations = true;
+      notifyListeners();  // Notifier pour afficher le loading
+
       _initEventService();
       _associationEvents = await _eventService.getAssociationEvents();
-      notifyListeners();
       return _associationEvents!;
     } catch (error) {
       if (error.toString().contains('Session expirée')) {
         await userProvider.logout();
       }
       rethrow;
+    } finally {
+      _isLoadingAssociations = false;
+      notifyListeners();
     }
   }
 
+
   Future<List<Event>> fetchParticipatingEvents() async {
+    if (_isLoadingParticipations) return _participatingEvents ?? [];
+
     try {
+      _isLoadingParticipations = true;
+      notifyListeners();  // Notifier pour afficher le loading
+
       _initEventService();
       _participatingEvents = await _eventService.getParticipatingEvents();
-      notifyListeners();
       return _participatingEvents!;
     } catch (error) {
       if (error.toString().contains('Session expirée')) {
         await userProvider.logout();
       }
       rethrow;
+    } finally {
+      _isLoadingParticipations = false;
+      notifyListeners();
     }
   }
 

@@ -182,14 +182,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       height: 56,
                       child: _isLoading
                           ? Center(
-                        child: CircularProgressIndicator(
-                          color: theme.primaryColor,
-                        ),
-                      )
+                              child: CircularProgressIndicator(
+                                color: theme.primaryColor,
+                              ),
+                            )
                           : ElevatedButton(
-                        onPressed: _handleLogin,
-                        child: const Text('Connexion'),
-                      ),
+                              onPressed: _handleLogin,
+                              child: const Text('Connexion'),
+                            ),
                     ),
                     const SizedBox(height: 15),
                     Row(
@@ -205,9 +205,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         TextButton(
-                          onPressed: _isLoading
-                              ? null
-                              : () => context.go('/register'),
+                          onPressed:
+                              _isLoading ? null : () => context.go('/register'),
                           child: Text(
                             'Créer un compte',
                             style: TextStyle(
