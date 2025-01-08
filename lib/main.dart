@@ -27,7 +27,6 @@ import 'screens/admin/admin_dashboard_screen.dart';
 import 'screens/admin/manage_users_screen.dart';
 import 'screens/admin/pending_associations_screen.dart';
 import 'screens/admin/manage_categories_screen.dart';
-import 'screens/admin/admin_layout.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -115,18 +114,13 @@ final GoRouter _router = GoRouter(
     }
 
     if (isAdmin && state.uri.toString().startsWith('/admin')) {
-      return null; // Autoriser les routes admin
+      return null;
     }
 
     if (isLoggedIn && isPublicRoute) {
       return '/';
     }
 
-    if (state.uri.toString().startsWith('/admin') && !isAdmin) {
-      return '/'; // Redirige les non-admins vers l'accueil
-    }
-
-    // Pas de redirection nécessaire
     if (state.uri.toString().startsWith('/admin') && !isAdmin) {
       return '/';
     }
@@ -287,24 +281,6 @@ final GoRouter _router = GoRouter(
               ),
             ),
           ],
-        ),
-        GoRoute(
-          path: 'profile',
-          pageBuilder: (BuildContext context, GoRouterState state) =>
-              const MaterialPage(
-            child: ProfileScreen(),
-          ),
-        ),
-        GoRoute(
-          path: '/edit-profile',
-          builder: (context, state) => const EditProfileScreen(),
-        ),
-        GoRoute(
-          path: 'join-association',
-          pageBuilder: (BuildContext context, GoRouterState state) =>
-              const MaterialPage(
-            child: JoinAssociationScreen(),
-          ),
         ),
       ],
     ),

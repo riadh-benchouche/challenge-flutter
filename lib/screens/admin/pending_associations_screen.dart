@@ -108,7 +108,7 @@ class _PendingAssociationsScreenState extends State<PendingAssociationsScreen> {
                     try {
                       await Provider.of<AssociationProvider>(context,
                               listen: false)
-                          .updateAssociation(
+                          .updateAssociationAdmin(
                         association.id,
                         {
                           'name': nameController.text,

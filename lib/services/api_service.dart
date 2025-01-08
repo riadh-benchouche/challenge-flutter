@@ -162,8 +162,8 @@ class ApiService {
     throw Exception('Impossible de créer l\'association : ${response.body}');
   }
 
-  Future<void> updateAssociation(String id, String name, String description,
-      bool isActive, String code) async {
+  Future<void> updateAssociationAdmin(String id, String name,
+      String description, bool isActive, String code) async {
     final response = await _handleResponse(() => http.put(
           Uri.parse('$baseUrl/associations/$id'),
           headers: headers,
@@ -196,24 +196,27 @@ class ApiService {
     }
   }
 
-  Future<Association> updateAssociation(String id, String name, String description) async {
+  Future<Association> updateAssociation(
+      String id, String name, String description) async {
     final response = await _handleResponse(() => http.put(
-      Uri.parse('$baseUrl/associations/$id'),
-      headers: headers,
-      body: jsonEncode({
-        'name': name,
-        'description': description,
-      }),
-    ));
+          Uri.parse('$baseUrl/associations/$id'),
+          headers: headers,
+          body: jsonEncode({
+            'name': name,
+            'description': description,
+          }),
+        ));
 
     if (response.statusCode == 200) {
       return Association.fromJson(jsonDecode(response.body));
     }
 
-    throw Exception('Impossible de mettre à jour l\'association : ${response.body}');
+    throw Exception(
+        'Impossible de mettre à jour l\'association : ${response.body}');
   }
 
-  Future<Association> uploadAssociationImage(String associationId, File image) async {
+  Future<Association> uploadAssociationImage(
+      String associationId, File image) async {
     final url = Uri.parse('$baseUrl/associations/$associationId/upload-image');
     final request = http.MultipartRequest('POST', url);
 

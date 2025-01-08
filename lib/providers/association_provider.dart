@@ -123,7 +123,7 @@ class AssociationProvider with ChangeNotifier {
     }
   }
 
-  Future<void> updateAssociation(
+  Future<void> updateAssociationAdmin(
       String id, Map<String, dynamic> associationData) async {
     try {
       final response = await userProvider.authenticatedRequest(
@@ -159,10 +159,12 @@ class AssociationProvider with ChangeNotifier {
     }
   }
 
-  Future<Association> updateAssociation(String id, String name, String description) async {
+  Future<Association> updateAssociation(
+      String id, String name, String description) async {
     try {
       _initApiService();
-      final association = await _apiService.updateAssociation(id, name, description);
+      final association =
+          await _apiService.updateAssociation(id, name, description);
       // Rafraîchir la liste des associations après la mise à jour
       await fetchAssociations();
       notifyListeners();
