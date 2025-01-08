@@ -1,7 +1,9 @@
 import 'package:challenge_flutter/models/association.dart';
+import 'package:challenge_flutter/providers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:challenge_flutter/providers/association_provider.dart';
+import 'package:go_router/go_router.dart';
 
 class AssociationDetailScreen extends StatefulWidget {
   final String associationId;
@@ -9,8 +11,7 @@ class AssociationDetailScreen extends StatefulWidget {
   const AssociationDetailScreen({super.key, required this.associationId});
 
   @override
-  _AssociationDetailScreenState createState() =>
-      _AssociationDetailScreenState();
+  _AssociationDetailScreenState createState() => _AssociationDetailScreenState();
 }
 
 class _AssociationDetailScreenState extends State<AssociationDetailScreen> {
@@ -23,33 +24,31 @@ class _AssociationDetailScreenState extends State<AssociationDetailScreen> {
   }
 
   void _loadAssociation() {
-    final associationProvider =
-        Provider.of<AssociationProvider>(context, listen: false);
-    _associationFuture =
-        associationProvider.fetchAssociationById(widget.associationId);
+    final associationProvider = Provider.of<AssociationProvider>(context, listen: false);
+    _associationFuture = associationProvider.fetchAssociationById(widget.associationId);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: theme.primaryColor,
-        title: const Text('Détails de l\'association',
-            style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: FutureBuilder<Association>(
-        future: _associationFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return FutureBuilder<Association>(
+      future: _associationFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-          if (snapshot.hasError) {
-            return Center(
+        if (snapshot.hasError) {
+          return Scaffold(
+            appBar: AppBar(
+              backgroundColor: theme.primaryColor,
+              title: const Text('Erreur', style: TextStyle(color: Colors.white)),
+              iconTheme: const IconThemeData(color: Colors.white),
+            ),
+            body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -67,26 +66,56 @@ class _AssociationDetailScreenState extends State<AssociationDetailScreen> {
                   ),
                 ],
               ),
-            );
-          }
+            ),
+          );
+        }
 
-          if (!snapshot.hasData) {
-            return const Center(
+        if (!snapshot.hasData) {
+          return Scaffold(
+            appBar: AppBar(
+              backgroundColor: theme.primaryColor,
+              title: const Text('Non trouvé', style: TextStyle(color: Colors.white)),
+              iconTheme: const IconThemeData(color: Colors.white),
+            ),
+            body: const Center(
               child: Text('Association non trouvée'),
-            );
-          }
+            ),
+          );
+        }
 
-          final association = snapshot.data!;
+        final association = snapshot.data!;
 
-          return SingleChildScrollView(
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: theme.primaryColor,
+            title: const Text('Détails de l\'association',
+                style: TextStyle(color: Colors.white)),
+            centerTitle: true,
+            iconTheme: const IconThemeData(color: Colors.white),
+            actions: [
+              Consumer<UserProvider>(
+                builder: (context, userProvider, _) {
+                  if (association.ownerId == userProvider.userData?['id']) {
+                    return IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.white),
+                      onPressed: () {
+                        context.go('/edit-association/${association.id}');
+                      },
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+            ],
+          ),
+          body: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(bottom: Radius.circular(0)),
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(0)),
                   child: Image.network(
-                    'http://10.0.2.2:3000/${association.imageUrl}',
+                    'https://www.invooce.online/${association.imageUrl}',
                     height: 380,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -117,12 +146,8 @@ class _AssociationDetailScreenState extends State<AssociationDetailScreen> {
                             ),
                           ),
                           Icon(
-                            association.isActive
-                                ? Icons.check_circle
-                                : Icons.cancel,
-                            color: association.isActive
-                                ? Colors.green
-                                : Colors.red,
+                            association.isActive ? Icons.check_circle : Icons.cancel,
+                            color: association.isActive ? Colors.green : Colors.red,
                             size: 24,
                           ),
                         ],
@@ -130,21 +155,20 @@ class _AssociationDetailScreenState extends State<AssociationDetailScreen> {
                       const SizedBox(height: 10),
                       Text(
                         association.description,
-                        style:
-                            const TextStyle(fontSize: 16, color: Colors.grey),
+                        style: const TextStyle(fontSize: 16, color: Colors.grey),
                       ),
                       const SizedBox(height: 20),
+                      _buildDetailRow(theme, Icons.vpn_key, 'Code: ${association.code}'),
+                      const SizedBox(height: 10),
+                      _buildDetailRow(theme, Icons.group, 'Membres: 11'),
+                      const SizedBox(height: 10),
+                      _buildDetailRow(theme, Icons.event, 'Événements: 12'),
+                      const SizedBox(height: 10),
                       _buildDetailRow(
-                          theme, Icons.vpn_key, 'Code: ${association.code}'),
-                      const SizedBox(height: 10),
-                      _buildDetailRow(theme, Icons.group,
-                          'Membres: 11'),
-                      const SizedBox(height: 10),
-                      _buildDetailRow(theme, Icons.event,
-                          'Événements: 12'),
-                      const SizedBox(height: 10),
-                      _buildDetailRow(theme, Icons.calendar_today,
-                          'Créée le: ${association.createdAt.toLocal().toString().split(' ')[0]}'),
+                          theme,
+                          Icons.calendar_today,
+                          'Créée le: ${association.createdAt.toLocal().toString().split(' ')[0]}'
+                      ),
                       const SizedBox(height: 30),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -156,15 +180,16 @@ class _AssociationDetailScreenState extends State<AssociationDetailScreen> {
                                 borderRadius: BorderRadius.circular(30),
                               ),
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 40, vertical: 12),
+                                  horizontal: 40,
+                                  vertical: 12
+                              ),
                             ),
                             onPressed: () {
                               // Implémenter la fonctionnalité de contact
                             },
                             child: const Text(
                               'Contacter',
-                              style:
-                                  TextStyle(fontSize: 16, color: Colors.white),
+                              style: TextStyle(fontSize: 16, color: Colors.white),
                             ),
                           ),
                           ElevatedButton(
@@ -174,15 +199,16 @@ class _AssociationDetailScreenState extends State<AssociationDetailScreen> {
                                 borderRadius: BorderRadius.circular(30),
                               ),
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 40, vertical: 12),
+                                  horizontal: 40,
+                                  vertical: 12
+                              ),
                             ),
                             onPressed: () {
                               // Implémenter la fonctionnalité pour rejoindre
                             },
                             child: const Text(
                               'Rejoindre',
-                              style:
-                                  TextStyle(fontSize: 16, color: Colors.white),
+                              style: TextStyle(fontSize: 16, color: Colors.white),
                             ),
                           ),
                         ],
@@ -192,9 +218,9 @@ class _AssociationDetailScreenState extends State<AssociationDetailScreen> {
                 ),
               ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 

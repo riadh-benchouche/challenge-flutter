@@ -1,16 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../providers/user_provider.dart';
 
 class AdminLayout extends StatelessWidget {
-  final Widget child; // Contenu de la page actuelle
+  final Widget child;
   const AdminLayout({Key? key, required this.child}) : super(key: key);
+
+  Future<void> _handleLogout(BuildContext context) async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      await userProvider.logout();
+      if (context.mounted) {
+        context.go('/login');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors de la déconnexion'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Row(
         children: [
-          // Menu latéral
           NavigationRail(
             selectedIndex: _getSelectedIndex(context),
             onDestinationSelected: (index) {
@@ -28,15 +48,32 @@ class AdminLayout extends StatelessWidget {
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.verified_user),
-                label: Text('Validation Associations'),
+                label: Text('Associations'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.category),
-                label: Text('CRUD Catégories'),
+                label: Text('Catégories'),
               ),
             ],
+            trailing: Expanded(
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.all(16),
+                      side: BorderSide(color: Theme.of(context).primaryColor),
+                    ),
+                    onPressed: () => _handleLogout(context),
+                    child: const Icon(Icons.logout,
+                      color: Colors.red),
+
+                  ),
+                ),
+              ),
+            ),
           ),
-          // Contenu principal
           Expanded(
             child: child,
           ),
@@ -46,8 +83,7 @@ class AdminLayout extends StatelessWidget {
   }
 
   int _getSelectedIndex(BuildContext context) {
-    final String location =
-        GoRouter.of(context).routerDelegate.currentConfiguration.uri.toString();
+    final String location = GoRouter.of(context).routerDelegate.currentConfiguration.uri.toString();
     if (location == '/admin') return 0;
     if (location.startsWith('/admin/users')) return 1;
     if (location.startsWith('/admin/pending-associations')) return 2;
@@ -58,16 +94,16 @@ class AdminLayout extends StatelessWidget {
   void _onMenuItemSelected(int index, BuildContext context) {
     switch (index) {
       case 0:
-        context.go('/admin'); // Tableau de bord
+        context.go('/admin');
         break;
       case 1:
-        context.go('/admin/users'); // Utilisateurs
+        context.go('/admin/users');
         break;
       case 2:
-        context.go('/admin/pending-associations'); // Validation Associations
+        context.go('/admin/pending-associations');
         break;
       case 3:
-        context.go('/admin/categories'); // CRUD Catégories
+        context.go('/admin/categories');
         break;
     }
   }

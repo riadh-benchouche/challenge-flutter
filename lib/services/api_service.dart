@@ -1,5 +1,6 @@
 // lib/services/api_service.dart
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:challenge_flutter/models/association.dart';
@@ -193,5 +194,54 @@ class ApiService {
     } else {
       throw Exception('Associations non trouvées : ${response.body}');
     }
+  }
+
+  Future<Association> updateAssociation(String id, String name, String description) async {
+    final response = await _handleResponse(() => http.put(
+      Uri.parse('$baseUrl/associations/$id'),
+      headers: headers,
+      body: jsonEncode({
+        'name': name,
+        'description': description,
+      }),
+    ));
+
+    if (response.statusCode == 200) {
+      return Association.fromJson(jsonDecode(response.body));
+    }
+
+    throw Exception('Impossible de mettre à jour l\'association : ${response.body}');
+  }
+
+  Future<Association> uploadAssociationImage(String associationId, File image) async {
+    final url = Uri.parse('$baseUrl/associations/$associationId/upload-image');
+    final request = http.MultipartRequest('POST', url);
+
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+    });
+
+    if (kIsWeb) {
+      final bytes = await image.readAsBytes();
+      request.files.add(http.MultipartFile.fromBytes(
+        'image',
+        bytes,
+        filename: request.files[0].filename,
+      ));
+    } else {
+      request.files.add(await http.MultipartFile.fromPath(
+        'image',
+        image.path,
+      ));
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      return Association.fromJson(jsonDecode(response.body));
+    }
+
+    throw Exception('Impossible de mettre à jour l\'image : ${response.body}');
   }
 }

@@ -41,9 +41,13 @@ class MessageProvider with ChangeNotifier {
 
   Future<void> loadUserAssociations() async {
     try {
+      if (userProvider.userData == null || userProvider.token == null) {
+        debugPrint('User data or token not available');
+        return;
+      }
+
       final response = await http.get(
-        Uri.parse(
-            '${userProvider.baseUrl}/users/${userProvider.userData!['id']}/associations'),
+        Uri.parse('${userProvider.baseUrl}/users/${userProvider.userData!['id']}/associations'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${userProvider.token}',
@@ -52,17 +56,23 @@ class MessageProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        _userAssociations =
-            data.map((json) => Association.fromJson(json)).toList();
+        _userAssociations = data.map((json) => Association.fromJson(json)).toList();
 
-        // Charger les messages non lus pour chaque association
+        // Load unread messages only if associations exist
         for (var association in _userAssociations) {
-          await loadMessages(association.id);
+          try {
+            await loadMessages(association.id);
+          } catch (e) {
+            debugPrint('Error loading messages for association ${association.id}: $e');
+          }
         }
 
         notifyListeners();
+      } else if (response.statusCode == 401) {
+        await userProvider.logout();
+        throw Exception('Session expired');
       } else {
-        throw Exception('Échec du chargement des associations');
+        throw Exception('Failed to load associations: ${response.statusCode}');
       }
     } catch (error) {
       debugPrint('Error loading associations: $error');

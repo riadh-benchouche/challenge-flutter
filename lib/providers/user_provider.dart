@@ -1,29 +1,20 @@
 import 'package:flutter/foundation.dart';
-import 'dart:io' if (dart.library.html) 'dart:html';
 import 'package:go_router/go_router.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
-import 'platform_helper.dart';
 
 class UserProvider extends ChangeNotifier {
   static const String TOKEN_KEY = 'auth_token';
   static const String USER_DATA_KEY = 'user_data';
   static const String IS_LOGGED_IN_KEY = 'is_logged_in';
   bool _initialized = false;
+
   bool get initialized => _initialized;
 
   String get _baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:3000'; // URL pour Web
-    } else if (isAndroid) {
-      return 'http://10.0.2.2:3000'; // URL pour Android (émulateur)
-    } else if (isIOS) {
-      return 'http://127.0.0.1:3000'; // URL pour iOS (émulateur)
-    } else {
-      return 'http://localhost:3000'; // Desktop ou autres
-    }
+    return 'https://invooce.online';
   }
 
   bool get isAdmin {
@@ -35,8 +26,11 @@ class UserProvider extends ChangeNotifier {
   Map<String, dynamic>? _userData;
 
   String get baseUrl => _baseUrl;
+
   bool get isLoggedIn => _isLoggedIn;
+
   String? get token => _token;
+
   Map<String, dynamic>? get userData => _userData;
 
   Future<void> initializeApp() async {
@@ -190,6 +184,8 @@ class UserProvider extends ChangeNotifier {
         }),
       );
 
+      debugPrint('Réponse HTTP status: ${response.statusCode}');
+
       if (response.statusCode == 201) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -342,3 +338,4 @@ class UserProvider extends ChangeNotifier {
 
 
 }
+
