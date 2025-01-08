@@ -69,43 +69,36 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     }
   }
 
-  Future<void> _selectDate() async {
+  Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
+      initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-      locale: const Locale('fr', 'FR'),
+      locale: const Locale('fr', 'FR'),  // Ajouter la locale française
     );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = DateTime(
-          picked.year,
-          picked.month,
-          picked.day,
-          _selectedTime.hour,
-          _selectedTime.minute,
-        );
-      });
-    }
-  }
 
-  Future<void> _selectTime() async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: _selectedTime,
-    );
-    if (picked != null && picked != _selectedTime) {
-      setState(() {
-        _selectedTime = picked;
-        _selectedDate = DateTime(
-          _selectedDate.year,
-          _selectedDate.month,
-          _selectedDate.day,
-          picked.hour,
-          picked.minute,
-        );
-      });
+    if (picked != null) {
+      // Conserver l'heure actuelle ou utiliser l'heure actuelle si pas de date sélectionnée
+      final currentTime = _selectedDate ?? DateTime.now();
+
+      final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(currentTime),
+      );
+
+      if (pickedTime != null) {
+        setState(() {
+          // Créer une nouvelle date en combinant la date sélectionnée avec l'heure sélectionnée
+          _selectedDate = DateTime(
+            picked.year,
+            picked.month,
+            picked.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        });
+      }
     }
   }
 
@@ -257,18 +250,20 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         enabled: !_isLoading,
                       ),
                       const SizedBox(height: 16),
-                      ListTile(
-                        title: const Text('Date et heure'),
-                        subtitle: Text(
-                          '${DateFormat('dd/MM/yyyy').format(_selectedDate)} à ${_selectedTime.format(context)}',
+                      InkWell(
+                        onTap: !_isLoading ? () => _selectDate(context) : null,
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Date et heure',
+                            border: OutlineInputBorder(),
+                          ),
+                          child: Text(
+                            _selectedDate != null
+                                ? DateFormat('dd/MM/yyyy HH:mm')
+                                .format(_selectedDate!)
+                                : 'Sélectionnez une date',
+                          ),
                         ),
-                        trailing: const Icon(Icons.calendar_today),
-                        onTap: !_isLoading
-                            ? () async {
-                                await _selectDate();
-                                if (mounted) await _selectTime();
-                              }
-                            : null,
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<CategoryModel>(
