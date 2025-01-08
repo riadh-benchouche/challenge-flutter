@@ -240,3 +240,4 @@ class UserProvider extends ChangeNotifier {
     }
   }
 }
+
