@@ -29,7 +29,7 @@ class AssociationProvider with ChangeNotifier {
 
   Future<List<Association>> fetchAssociationByUser() async {
     try {
-      _initApiService();
+      initApiService();
       _associations = (await _apiService.getAssociationsByUser(
           userProvider.userData!['id'])) as List<Association>?;
       notifyListeners();
@@ -60,7 +60,7 @@ class AssociationProvider with ChangeNotifier {
   Future<List<Association>> fetchAssociationsAll() async {
     try {
       // Réinitialiser le service API pour avoir le dernier token
-      _initApiService();
+      initApiService();
       _associationsAll = await _apiService.getAssociationsAll();
       notifyListeners();
       return _associationsAll!;
@@ -108,7 +108,7 @@ class AssociationProvider with ChangeNotifier {
 
   Future<Association> createAssociation(String name, String description) async {
     try {
-      _initApiService();
+      initApiService();
       final association =
           await _apiService.createAssociation(name, description);
       // Rafraîchir la liste des associations après la création
@@ -145,7 +145,7 @@ class AssociationProvider with ChangeNotifier {
 
   Future<List<Association>> fetchAssociationByOwner() async {
     try {
-      _initApiService();
+      initApiService();
       List<Association> ownerAssociations =
           await _apiService.getAssociationByOwner(userProvider.userData!['id']);
       _associations = ownerAssociations;
@@ -162,7 +162,7 @@ class AssociationProvider with ChangeNotifier {
   Future<Association> updateAssociation(
       String id, String name, String description) async {
     try {
-      _initApiService();
+      initApiService();
       final association =
           await _apiService.updateAssociation(id, name, description);
       // Rafraîchir la liste des associations après la mise à jour
