@@ -88,16 +88,29 @@ Future<void> main() async {
         ),
 
         ChangeNotifierProxyProvider<UserProvider, MessageProvider>(
-          create: (context) => MessageProvider(
-            userProvider: Provider.of<UserProvider>(context, listen: false),
-          ),
-          update: (context, userProvider, previous) {
-            final provider =
-                previous ?? MessageProvider(userProvider: userProvider);
-            if (previous == null) {
-              provider.initWebSocket();
-            }
+          create: (context) {
+            final provider = MessageProvider(
+              userProvider: Provider.of<UserProvider>(context, listen: false),
+            );
+            provider.initWebSocket(); // Initialize WebSocket immediately
             return provider;
+          },
+          update: (context, userProvider, previous) {
+            if (previous == null) {
+              final provider = MessageProvider(userProvider: userProvider);
+              provider.initWebSocket();
+              return provider;
+            }
+
+            // Réinitialiser le WebSocket si le token a changé
+            if (previous.userProvider.token != userProvider.token) {
+              previous.dispose();
+              final provider = MessageProvider(userProvider: userProvider);
+              provider.initWebSocket();
+              return provider;
+            }
+
+            return previous;
           },
         ),
       ],
