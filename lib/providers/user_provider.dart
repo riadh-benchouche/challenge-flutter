@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 
+import 'home_provider.dart';
+
 class UserProvider extends ChangeNotifier {
   static const String TOKEN_KEY = 'auth_token';
   static const String USER_DATA_KEY = 'user_data';
@@ -161,6 +163,11 @@ class UserProvider extends ChangeNotifier {
 
         _isLoggedIn = true;
         await _saveAuthData(_token!, _userData!);
+
+        // Préchargement des données immédiatement après la connexion
+        final homeProvider = HomeProvider(userProvider: this);
+        await homeProvider.refreshAll();
+
         notifyListeners();
       } else {
         final errorData = jsonDecode(response.body);
@@ -338,4 +345,3 @@ class UserProvider extends ChangeNotifier {
 
 
 }
-

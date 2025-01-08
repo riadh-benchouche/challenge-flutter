@@ -26,12 +26,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadDataFuture = _loadAllData();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _loadDataFuture = _loadAllData();
-  }
-
   Future<void> _loadAllData() async {
     final homeProvider = Provider.of<HomeProvider>(context, listen: false);
     try {
@@ -74,7 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTopAssociations(BuildContext context, List<Association>? associations) {
+  Widget _buildTopAssociations(
+      BuildContext context, List<Association>? associations) {
     if (associations == null || associations.isEmpty) {
       return const Center(child: Text('Aucune association trouvée'));
     }

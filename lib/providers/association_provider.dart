@@ -13,10 +13,10 @@ class AssociationProvider with ChangeNotifier {
   Association? _currentAssociation;
 
   AssociationProvider({required this.userProvider}) {
-    _initApiService();
+    initApiService();
   }
 
-  void _initApiService() {
+  void initApiService() {
     _apiService = ApiService(
       baseUrl: userProvider.baseUrl,
       token: userProvider.token,
@@ -45,7 +45,7 @@ class AssociationProvider with ChangeNotifier {
   Future<List<Association>> fetchAssociations() async {
     try {
       // Réinitialiser le service API pour avoir le dernier token
-      _initApiService();
+      initApiService();
       _associations = await _apiService.getAssociations();
       notifyListeners();
       return _associations!;
@@ -74,7 +74,7 @@ class AssociationProvider with ChangeNotifier {
 
   Future<Association> fetchAssociationById(String id) async {
     try {
-      _initApiService();
+      initApiService();
       final association = await _apiService.getAssociationById(id);
       _currentAssociation = association;
       notifyListeners();
@@ -90,7 +90,7 @@ class AssociationProvider with ChangeNotifier {
 
   Future<void> joinAssociation(String code) async {
     try {
-      _initApiService();
+      initApiService();
       debugPrint('Joining association with code: $code');
 
       await _apiService.joinAssociation(code);
@@ -179,7 +179,7 @@ class AssociationProvider with ChangeNotifier {
 
   Future<Association> uploadAssociationImage(String id, File image) async {
     try {
-      _initApiService();
+      initApiService();
       final association = await _apiService.uploadAssociationImage(id, image);
       await fetchAssociationById(id);
       notifyListeners();

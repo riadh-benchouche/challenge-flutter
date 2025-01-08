@@ -1,5 +1,6 @@
 // lib/services/home_service.dart
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import '../models/statistics.dart';
 import '../models/association.dart';
@@ -12,9 +13,9 @@ class HomeService {
   HomeService({required this.baseUrl, this.token});
 
   Map<String, String> get headers => {
-    'Content-Type': 'application/json',
-    if (token != null) 'Authorization': 'Bearer $token',
-  };
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
 
   Future<Statistics> getStatistics() async {
     try {
@@ -56,22 +57,29 @@ class HomeService {
 
   Future<List<Event>> getRecentEvents() async {
     try {
+      debugPrint(
+          'Appel API getRecentEvents avec token: ${token?.substring(0, 10)}...');
       final response = await http.get(
         Uri.parse('$baseUrl/users/events'),
         headers: headers,
       );
+
+      debugPrint('Status code: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         final List<Event> events = (jsonData['rows'] as List)
             .map((json) => Event.fromJson(json))
             .toList();
-        return events.take(3).toList(); // Prendre seulement les 3 premiers événements
+        return events.take(3).toList();
       } else {
-        throw Exception('Échec du chargement des événements');
+        throw Exception(
+            'Échec du chargement des événements (${response.statusCode}): ${response.body}');
       }
     } catch (e) {
-      throw Exception('Erreur: ${e.toString()}');
+      debugPrint('Erreur dans getRecentEvents: $e');
+      rethrow;
     }
   }
 }
