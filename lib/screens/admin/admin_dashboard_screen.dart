@@ -13,52 +13,55 @@ class AdminDashboardScreen extends StatelessWidget {
           children: [
             const Text(
               'Bienvenue dans le tableau de bord admin !',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueGrey,
+              ),
             ),
             const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () {
-                context.go('/admin/dashboard/users');
-              },
-              icon: const Icon(Icons.people),
-              label: const Text('Gérer les utilisateurs'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
+            Wrap(
+              spacing: 20,
+              runSpacing: 20,
+              alignment: WrapAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    context.go('/admin/users');
+                  },
+                  icon: const Icon(Icons.people),
+                  label: const Text('Gérer les utilisateurs'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 16),
+                    textStyle: const TextStyle(fontSize: 16),
+                  ),
                 ),
-                textStyle: const TextStyle(fontSize: 16),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                context.go('/admin/dashboard/pending-associations');
-              },
-              icon: const Icon(Icons.verified_user),
-              label: const Text('Activer les associations'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
+                ElevatedButton.icon(
+                  onPressed: () {
+                    context.go('/admin/pending-associations');
+                  },
+                  icon: const Icon(Icons.verified_user),
+                  label: const Text('Activer les associations'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 16),
+                    textStyle: const TextStyle(fontSize: 16),
+                  ),
                 ),
-                textStyle: const TextStyle(fontSize: 16),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                context.go('/admin/categories');
-              },
-              icon: const Icon(Icons.category),
-              label: const Text('CRUD Catégories'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
+                ElevatedButton.icon(
+                  onPressed: () {
+                    context.go('/admin/categories');
+                  },
+                  icon: const Icon(Icons.category),
+                  label: const Text('CRUD Catégories'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 16),
+                    textStyle: const TextStyle(fontSize: 16),
+                  ),
                 ),
-                textStyle: const TextStyle(fontSize: 16),
-              ),
+              ],
             ),
           ],
         ),
