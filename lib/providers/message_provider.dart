@@ -18,7 +18,7 @@ class MessageProvider with ChangeNotifier {
   final Set<String> _readMessageIds = {};
 
   MessageProvider({required this.userProvider}) {
-    _initWebSocket();
+    initWebSocket();
   }
 
   List<Association> get userAssociations => _userAssociations;
@@ -27,7 +27,7 @@ class MessageProvider with ChangeNotifier {
 
   Association? get currentAssociation => _currentAssociation;
 
-  void _initWebSocket() {
+  void initWebSocket() {
     _webSocketService = WebSocketService(
       token: userProvider.token ?? '',
     );

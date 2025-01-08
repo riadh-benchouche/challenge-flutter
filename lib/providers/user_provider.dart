@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 
+import 'home_provider.dart';
+
 class UserProvider extends ChangeNotifier {
   static const String TOKEN_KEY = 'auth_token';
   static const String USER_DATA_KEY = 'user_data';
@@ -62,7 +64,8 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _saveAuthData(String token, Map<String, dynamic> userData) async {
+  Future<void> _saveAuthData(
+      String token, Map<String, dynamic> userData) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(TOKEN_KEY, token);
@@ -91,10 +94,10 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<http.Response> authenticatedRequest(
-      String endpoint, {
-        String method = 'GET',
-        Map<String, dynamic>? body,
-      }) async {
+    String endpoint, {
+    String method = 'GET',
+    Map<String, dynamic>? body,
+  }) async {
     final url = Uri.parse('$_baseUrl$endpoint');
 
     final headers = {
@@ -162,6 +165,11 @@ class UserProvider extends ChangeNotifier {
 
         _isLoggedIn = true;
         await _saveAuthData(_token!, _userData!);
+
+        // Préchargement des données immédiatement après la connexion
+        final homeProvider = HomeProvider(userProvider: this);
+        await homeProvider.refreshAll();
+
         notifyListeners();
       } else {
         final errorData = jsonDecode(response.body);
@@ -218,7 +226,6 @@ class UserProvider extends ChangeNotifier {
       throw Exception('Erreur d\'inscription: ${error.toString()}');
     }
   }
-
 
   Future<void> logout() async {
     _isLoggedIn = false;

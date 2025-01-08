@@ -14,10 +14,10 @@ class HomeProvider with ChangeNotifier {
   List<Event>? _recentEvents;
 
   HomeProvider({required this.userProvider}) {
-    _initHomeService();
+    initHomeService();
   }
 
-  void _initHomeService() {
+  void initHomeService() {
     _homeService = HomeService(
       baseUrl: userProvider.baseUrl,
       token: userProvider.token,
@@ -25,7 +25,9 @@ class HomeProvider with ChangeNotifier {
   }
 
   Statistics? get statistics => _statistics;
+
   List<Association>? get topAssociations => _topAssociations;
+
   List<Event>? get recentEvents => _recentEvents;
 
   Future<Statistics> fetchStatistics() async {
@@ -69,6 +71,14 @@ class HomeProvider with ChangeNotifier {
 
   Future<void> refreshAll() async {
     try {
+      if (userProvider.token == null) {
+        debugPrint('Pas de token disponible');
+        return;
+      }
+
+      // Réinitialiser le service pour avoir le dernier token
+      initHomeService();
+
       await Future.wait([
         fetchStatistics(),
         fetchTopAssociations(),
