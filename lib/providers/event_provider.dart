@@ -1,8 +1,8 @@
 import 'package:challenge_flutter/models/category_model.dart';
 import 'package:flutter/foundation.dart';
-import '../models/event.dart';
-import '../services/event_service.dart';
-import './user_provider.dart';
+import 'package:challenge_flutter/models/event.dart';
+import 'package:challenge_flutter/services/event_service.dart';
+import 'package:challenge_flutter/providers/user_provider.dart';
 
 class EventProvider with ChangeNotifier {
   final UserProvider userProvider;
@@ -42,7 +42,6 @@ class EventProvider with ChangeNotifier {
   bool get isLoadingAssociations => _isLoadingAssociations;
   bool get isLoadingParticipations => _isLoadingParticipations;
 
-
   Future<List<Event>> fetchAssociationEvents() async {
     if (_isLoadingAssociations) return _associationEvents ?? [];
 
@@ -63,7 +62,6 @@ class EventProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-
 
   Future<List<Event>> fetchParticipatingEvents() async {
     if (_isLoadingParticipations) return _participatingEvents ?? [];
@@ -112,8 +110,6 @@ class EventProvider with ChangeNotifier {
     }
   }
 
-
-
   Future<void> toggleParticipation(String eventId, bool isAttending) async {
     try {
       initEventService();
@@ -123,12 +119,10 @@ class EventProvider with ChangeNotifier {
         _shouldSwitchToParticipating = true;
       }
 
-      // Mettre à jour l'événement courant si c'est celui-ci
       if (_currentEvent?.id == eventId) {
         _currentEvent = await _eventService.getEventById(eventId);
       }
 
-      // Rafraîchir les listes d'événements
       await Future.wait([
         fetchAssociationEvents(),
         fetchParticipatingEvents(),
@@ -143,8 +137,13 @@ class EventProvider with ChangeNotifier {
     }
   }
 
-  Future<Event> createEvent(String name, String description, DateTime date,
-      String location, String categoryId, String associationId) async {
+  Future<Event> createEvent(
+      String name,
+      String description,
+      DateTime date,
+      String location,
+      String categoryId,
+      String associationId) async {
     try {
       initEventService();
       final event = await _eventService.createEvent(
@@ -155,10 +154,52 @@ class EventProvider with ChangeNotifier {
         categoryId: categoryId,
         associationId: associationId,
       );
+
       await Future.wait([
         fetchAssociationEvents(),
         fetchParticipatingEvents(),
       ]);
+
+      notifyListeners();
+      return event;
+    } catch (error) {
+      if (error.toString().contains('Session expirée')) {
+        await userProvider.logout();
+      }
+      rethrow;
+    }
+  }
+
+  Future<Event> updateEvent(
+      String eventId,
+      String name,
+      String description,
+      DateTime date,
+      String location,
+      String categoryId,
+      String associationId
+      ) async {
+    try {
+      initEventService();
+      final event = await _eventService.updateEvent(
+        eventId: eventId,
+        name: name,
+        description: description,
+        date: date,
+        location: location,
+        categoryId: categoryId,
+        associationId: associationId
+      );
+
+      if (_currentEvent?.id == eventId) {
+        _currentEvent = event;
+      }
+
+      await Future.wait([
+        fetchAssociationEvents(),
+        fetchParticipatingEvents(),
+      ]);
+
       notifyListeners();
       return event;
     } catch (error) {

@@ -11,45 +11,27 @@ class MessageProvider with ChangeNotifier {
   final UserProvider userProvider;
   late WebSocketService _webSocketService;
   final Map<String, List<Message>> _messages = {};
-  bool _isConnected = false;
   Association? _currentAssociation;
   List<Association> _userAssociations = [];
-  final Map<String, int> _unreadCounts = {};
-  final Set<String> _readMessageIds = {};
 
   MessageProvider({required this.userProvider}) {
     initWebSocket();
   }
 
   List<Association> get userAssociations => _userAssociations;
-
-  String get baseUrl => userProvider.baseUrl;
-
   Association? get currentAssociation => _currentAssociation;
 
   void initWebSocket() {
-    _webSocketService = WebSocketService(
-      token: userProvider.token ?? '',
-    );
-
+    _webSocketService = WebSocketService(token: userProvider.token ?? '');
     _webSocketService.onMessageReceived = _handleNewMessage;
-    _webSocketService.onConnectionClosed = _handleConnectionClosed;
-    _webSocketService.onError = _handleError;
-
-    connect();
+    _webSocketService.connect();
   }
 
   Future<void> loadUserAssociations() async {
     try {
-      if (userProvider.userData == null || userProvider.token == null) {
-        debugPrint('User data or token not available');
-        return;
-      }
-
       final response = await http.get(
         Uri.parse('${userProvider.baseUrl}/users/${userProvider.userData!['id']}/associations'),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer ${userProvider.token}',
         },
       );
@@ -58,21 +40,12 @@ class MessageProvider with ChangeNotifier {
         final List<dynamic> data = jsonDecode(response.body);
         _userAssociations = data.map((json) => Association.fromJson(json)).toList();
 
-        // Load unread messages only if associations exist
         for (var association in _userAssociations) {
-          try {
-            await loadMessages(association.id);
-          } catch (e) {
-            debugPrint('Error loading messages for association ${association.id}: $e');
-          }
+          await loadMessages(association.id);
         }
-
         notifyListeners();
-      } else if (response.statusCode == 401) {
-        await userProvider.logout();
-        throw Exception('Session expired');
       } else {
-        throw Exception('Failed to load associations: ${response.statusCode}');
+        throw Exception('Failed to load associations');
       }
     } catch (error) {
       debugPrint('Error loading associations: $error');
@@ -82,50 +55,32 @@ class MessageProvider with ChangeNotifier {
 
   Future<void> loadMessages(String associationId) async {
     try {
-      // Charger les détails de l'association
       final associationResponse = await http.get(
         Uri.parse('${userProvider.baseUrl}/associations/$associationId'),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer ${userProvider.token}',
         },
       );
 
       if (associationResponse.statusCode == 200) {
-        _currentAssociation =
-            Association.fromJson(jsonDecode(associationResponse.body));
+        _currentAssociation = Association.fromJson(jsonDecode(associationResponse.body));
       }
 
-      // Charger les messages
       final response = await http.get(
-        Uri.parse(
-            '${userProvider.baseUrl}/messages/association/$associationId'),
+        Uri.parse('${userProvider.baseUrl}/messages/association/$associationId'),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer ${userProvider.token}',
         },
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        _messages[associationId] =
-            data.map((json) => Message.fromJson(json)).toList();
-        _updateUnreadCount(associationId);
+        _messages[associationId] = data.map((json) => Message.fromJson(json)).toList();
         notifyListeners();
-      } else {
-        throw Exception('Échec du chargement des messages');
       }
     } catch (error) {
       debugPrint('Error loading messages: $error');
       rethrow;
-    }
-  }
-
-  void connect() {
-    if (!_isConnected) {
-      _webSocketService.connect();
-      _isConnected = true;
-      notifyListeners();
     }
   }
 
@@ -134,44 +89,15 @@ class MessageProvider with ChangeNotifier {
     if (!_messages.containsKey(associationId)) {
       _messages[associationId] = [];
     }
-
-    // Ne pas ajouter le message si c'est nous qui l'avons envoyé
-    if (message.senderId == userProvider.userData!['id']) {
-      // Mettre à jour uniquement le statut du message existant
-      final existingIndex =
-          _messages[associationId]!.indexWhere((m) => m.id == message.id);
-      if (existingIndex != -1) {
-        _messages[associationId]![existingIndex] =
-            message.copyWith(status: MessageStatus.sent);
-        notifyListeners();
-      }
-      return;
+    // Ajouter le message uniquement s'il n'existe pas déjà
+    if (!_messages[associationId]!.any((m) => m.content == message.content &&
+        m.createdAt.difference(message.createdAt).inSeconds.abs() < 2)) {
+      _messages[associationId]!.add(message);
+      notifyListeners();
     }
-
-    // Sinon, ajouter le nouveau message reçu
-    _messages[associationId]!.add(message);
-    _updateUnreadCount(associationId);
-    notifyListeners();
-  }
-
-  void _handleConnectionClosed() {
-    _isConnected = false;
-    notifyListeners();
-    Future.delayed(const Duration(seconds: 5), () {
-      if (!_isConnected) {
-        connect();
-      }
-    });
-  }
-
-  void _handleError(dynamic error) {
-    // debugPrint('WebSocket error: $error');
-    _isConnected = false;
-    notifyListeners();
   }
 
   Future<void> sendMessage(String content, String associationId) async {
-    // Créer le message local
     final message = Message(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       content: content,
@@ -180,66 +106,22 @@ class MessageProvider with ChangeNotifier {
       createdAt: DateTime.now(),
       sender: User.fromJson(userProvider.userData!),
       association: _currentAssociation ?? Association.fromJson({}),
-      status: MessageStatus.sending,
     );
 
     try {
-      // Ajouter le message localement avec status "sending"
-      if (!_messages.containsKey(associationId)) {
-        _messages[associationId] = [];
-      }
-      _messages[associationId]!.add(message);
-      notifyListeners();
-
-      // Envoyer uniquement via WebSocket
+      // Ne plus ajouter le message localement ici
+      // Laisser le WebSocket gérer l'ajout quand il reçoit la confirmation
       _webSocketService.sendMessage(message);
     } catch (e) {
-      // En cas d'erreur, mettre à jour le statut du message local
-      final messageIndex =
-          _messages[associationId]!.indexWhere((m) => m.id == message.id);
-      if (messageIndex != -1) {
-        _messages[associationId]![messageIndex] =
-            message.copyWith(status: MessageStatus.failed);
-        notifyListeners();
-      }
-      debugPrint('Erreur envoi message: $e');
-      throw Exception('Impossible d\'envoyer le message: $e');
+      debugPrint('Error sending message: $e');
+      throw Exception('Cannot send message: $e');
     }
-  }
-
-  int getUnreadCount(String associationId) {
-    return _unreadCounts[associationId] ?? 0;
   }
 
   Message? getLastMessage(String associationId) {
     final messages = _messages[associationId];
     if (messages == null || messages.isEmpty) return null;
     return messages.last;
-  }
-
-  void _updateUnreadCount(String associationId) {
-    final messages = _messages[associationId] ?? [];
-    final currentUserId = userProvider.userData!['id'];
-
-    _unreadCounts[associationId] = messages
-        .where((msg) =>
-            msg.senderId != currentUserId && !_readMessageIds.contains(msg.id))
-        .length;
-
-    notifyListeners();
-  }
-
-  void markMessageAsRead(String messageId, String associationId) {
-    _readMessageIds.add(messageId);
-    _updateUnreadCount(associationId);
-  }
-
-  void markAllMessagesAsRead(String associationId) {
-    final messages = _messages[associationId] ?? [];
-    for (var message in messages) {
-      _readMessageIds.add(message.id);
-    }
-    _updateUnreadCount(associationId);
   }
 
   List<Message> getMessagesForAssociation(String associationId) {
@@ -249,7 +131,6 @@ class MessageProvider with ChangeNotifier {
   @override
   void dispose() {
     _webSocketService.dispose();
-    _isConnected = false;
     super.dispose();
   }
 }

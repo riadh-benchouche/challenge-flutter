@@ -5,6 +5,7 @@ import 'package:challenge_flutter/providers/category_provider.dart';
 import 'package:challenge_flutter/screens/associations/create_association_screen.dart';
 import 'package:challenge_flutter/screens/associations/edit_association_screen.dart';
 import 'package:challenge_flutter/screens/events/create_event_screen.dart';
+import 'package:challenge_flutter/screens/events/edit_event_screen.dart';
 import 'package:challenge_flutter/screens/layout/admin_layout.dart';
 import 'package:challenge_flutter/screens/layout/main_layout.dart';
 import 'package:flutter/material.dart';
@@ -62,16 +63,16 @@ Future<void> main() async {
             }),
 
         ChangeNotifierProxyProvider<UserProvider, EventProvider>(
-            create: (context) => EventProvider(
-                  userProvider:
-                      Provider.of<UserProvider>(context, listen: false),
-                ),
-            update: (context, userProvider, previous) {
-              final provider =
-                  previous ?? EventProvider(userProvider: userProvider);
-              if (previous == null) provider.initEventService();
-              return provider;
-            }),
+          create: (context) => EventProvider(
+            userProvider: Provider.of<UserProvider>(context, listen: false),
+          ),
+          update: (context, userProvider, previous) {
+            final provider =
+                previous ?? EventProvider(userProvider: userProvider);
+            if (previous == null) provider.initEventService();
+            return provider;
+          },
+        ),
         ChangeNotifierProxyProvider<UserProvider, HomeProvider>(
           create: (context) => HomeProvider(
             userProvider: Provider.of<UserProvider>(context, listen: false),
@@ -87,16 +88,29 @@ Future<void> main() async {
         ),
 
         ChangeNotifierProxyProvider<UserProvider, MessageProvider>(
-          create: (context) => MessageProvider(
-            userProvider: Provider.of<UserProvider>(context, listen: false),
-          ),
-          update: (context, userProvider, previous) {
-            final provider =
-                previous ?? MessageProvider(userProvider: userProvider);
-            if (previous == null) {
-              provider.initWebSocket();
-            }
+          create: (context) {
+            final provider = MessageProvider(
+              userProvider: Provider.of<UserProvider>(context, listen: false),
+            );
+            provider.initWebSocket(); // Initialize WebSocket immediately
             return provider;
+          },
+          update: (context, userProvider, previous) {
+            if (previous == null) {
+              final provider = MessageProvider(userProvider: userProvider);
+              provider.initWebSocket();
+              return provider;
+            }
+
+            // Réinitialiser le WebSocket si le token a changé
+            if (previous.userProvider.token != userProvider.token) {
+              previous.dispose();
+              final provider = MessageProvider(userProvider: userProvider);
+              provider.initWebSocket();
+              return provider;
+            }
+
+            return previous;
           },
         ),
       ],
@@ -250,6 +264,12 @@ final GoRouter _router = GoRouter(
           path: '/edit-association/:id',
           builder: (context, state) => EditAssociationScreen(
             associationId: state.pathParameters['id']!,
+          ),
+        ),
+        GoRoute(
+          path: '/edit-event/:id',
+          builder: (context, state) => EditEventScreen(
+            eventId: state.pathParameters['id']!,
           ),
         ),
         GoRoute(
