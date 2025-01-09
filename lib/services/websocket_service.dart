@@ -11,36 +11,46 @@ class WebSocketService {
   Function(dynamic)? onError;
   bool _isConnected = false;
 
-  WebSocketService({required this.token});
+  WebSocketService({required this.token}) {
+    debugPrint('WebSocketService initialized with token');
+  }
 
   void connect() {
     if (_isConnected) return;
 
     try {
+      debugPrint('Attempting to connect to WebSocket...');
+
       _channel = IOWebSocketChannel.connect(
-        'wss://invooce.online/ws',
+        Uri.parse('wss://invooce.online/ws'),
         headers: {
           'Authorization': 'Bearer $token',
           'Connection': 'Upgrade',
           'Upgrade': 'websocket',
+          'Sec-WebSocket-Version': '13',
+          'Sec-WebSocket-Protocol': 'ws',
         },
+        pingInterval: const Duration(seconds: 30),
       );
 
+      debugPrint('WebSocket connection initiated');
       _isConnected = true;
 
       _channel?.stream.listen(
-            (data) {
+        (data) {
           try {
             debugPrint('WebSocket received: $data');
             final message = Message.fromJson(jsonDecode(data));
             onMessageReceived?.call(message);
-          } catch (e) {
+          } catch (e, stackTrace) {
             debugPrint('Error parsing message: $e');
+            debugPrint('Stack trace: $stackTrace');
             onError?.call(e);
           }
         },
-        onError: (error) {
+        onError: (error, stackTrace) {
           debugPrint('WebSocket error: $error');
+          debugPrint('Stack trace: $stackTrace');
           _isConnected = false;
           onError?.call(error);
           _reconnect();
@@ -52,8 +62,9 @@ class WebSocketService {
           _reconnect();
         },
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Connection error: $e');
+      debugPrint('Stack trace: $stackTrace');
       _isConnected = false;
       onError?.call(e);
       _reconnect();
@@ -70,11 +81,12 @@ class WebSocketService {
 
   void sendMessage(Message message) {
     if (!_isConnected) {
+      debugPrint('Not connected, attempting to connect before sending message');
       connect();
+      return;
     }
 
     try {
-      // Simplifier la structure du message pour correspondre à ce que le serveur attend
       final data = jsonEncode({
         'content': message.content,
         'association_id': message.associationId,
@@ -89,6 +101,7 @@ class WebSocketService {
   }
 
   void dispose() {
+    debugPrint('Disposing WebSocket service');
     _isConnected = false;
     _channel?.sink.close();
     _channel = null;

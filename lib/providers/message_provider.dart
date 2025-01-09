@@ -19,18 +19,38 @@ class MessageProvider with ChangeNotifier {
   }
 
   List<Association> get userAssociations => _userAssociations;
+
   Association? get currentAssociation => _currentAssociation;
 
   void initWebSocket() {
-    _webSocketService = WebSocketService(token: userProvider.token ?? '');
+    if (userProvider.token == null || userProvider.token!.isEmpty) {
+      debugPrint('No token available, skipping WebSocket initialization');
+      return;
+    }
+
+    debugPrint('Initializing WebSocket with token');
+    _webSocketService = WebSocketService(token: userProvider.token!);
     _webSocketService.onMessageReceived = _handleNewMessage;
+    _webSocketService.onError = (error) {
+      debugPrint('WebSocket error in provider: $error');
+    };
+    _webSocketService.onConnectionClosed = () {
+      debugPrint('WebSocket connection closed in provider');
+    };
     _webSocketService.connect();
+  }
+
+  @override
+  void dispose() {
+    _webSocketService.dispose();
+    super.dispose();
   }
 
   Future<void> loadUserAssociations() async {
     try {
       final response = await http.get(
-        Uri.parse('${userProvider.baseUrl}/users/${userProvider.userData!['id']}/associations'),
+        Uri.parse(
+            '${userProvider.baseUrl}/users/${userProvider.userData!['id']}/associations'),
         headers: {
           'Authorization': 'Bearer ${userProvider.token}',
         },
@@ -38,7 +58,8 @@ class MessageProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        _userAssociations = data.map((json) => Association.fromJson(json)).toList();
+        _userAssociations =
+            data.map((json) => Association.fromJson(json)).toList();
 
         for (var association in _userAssociations) {
           await loadMessages(association.id);
@@ -63,11 +84,13 @@ class MessageProvider with ChangeNotifier {
       );
 
       if (associationResponse.statusCode == 200) {
-        _currentAssociation = Association.fromJson(jsonDecode(associationResponse.body));
+        _currentAssociation =
+            Association.fromJson(jsonDecode(associationResponse.body));
       }
 
       final response = await http.get(
-        Uri.parse('${userProvider.baseUrl}/messages/association/$associationId'),
+        Uri.parse(
+            '${userProvider.baseUrl}/messages/association/$associationId'),
         headers: {
           'Authorization': 'Bearer ${userProvider.token}',
         },
@@ -75,7 +98,8 @@ class MessageProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        _messages[associationId] = data.map((json) => Message.fromJson(json)).toList();
+        _messages[associationId] =
+            data.map((json) => Message.fromJson(json)).toList();
         notifyListeners();
       }
     } catch (error) {
@@ -90,7 +114,8 @@ class MessageProvider with ChangeNotifier {
       _messages[associationId] = [];
     }
     // Ajouter le message uniquement s'il n'existe pas déjà
-    if (!_messages[associationId]!.any((m) => m.content == message.content &&
+    if (!_messages[associationId]!.any((m) =>
+        m.content == message.content &&
         m.createdAt.difference(message.createdAt).inSeconds.abs() < 2)) {
       _messages[associationId]!.add(message);
       notifyListeners();
@@ -126,11 +151,5 @@ class MessageProvider with ChangeNotifier {
 
   List<Message> getMessagesForAssociation(String associationId) {
     return _messages[associationId] ?? [];
-  }
-
-  @override
-  void dispose() {
-    _webSocketService.dispose();
-    super.dispose();
   }
 }
