@@ -35,8 +35,6 @@ class UserProvider extends ChangeNotifier {
 
   Map<String, dynamic>? get userData => _userData;
 
-  UserProvider();
-
   Future<void> initializeApp() async {
     if (!_initialized) {
       await _loadStoredData();
@@ -246,4 +244,104 @@ class UserProvider extends ChangeNotifier {
       debugPrint('Erreur refresh user data: $e');
     }
   }
+
+  List<Map<String, dynamic>> _users = [];
+
+  List<Map<String, dynamic>> get users => _users;
+
+  Future<void> fetchUsers() async {
+    try {
+      int page = 1; // Page de départ
+      const int limit = 12; // Nombre d'éléments par page (peut être ajusté)
+      bool hasMore = true;
+
+      List<Map<String, dynamic>> allUsers = []; // Stocker tous les utilisateurs
+
+      while (hasMore) {
+        final response = await authenticatedRequest(
+          '/users?page=$page&limit=$limit',
+          method: 'GET',
+        );
+
+        if (response.statusCode == 200) {
+          final decodedData = jsonDecode(response.body);
+
+          if (decodedData is Map && decodedData.containsKey('rows')) {
+            final List<dynamic> rows = decodedData['rows'];
+
+            // Ajouter les utilisateurs récupérés
+            allUsers.addAll(rows.map((user) => user as Map<String, dynamic>));
+
+            // Vérifier s'il reste encore des pages
+            final int totalPages = decodedData['pages'] ?? 1;
+            page++;
+
+            if (page > totalPages) {
+              hasMore = false;
+            }
+          } else {
+            throw Exception('Structure inattendue dans la réponse');
+          }
+        } else {
+          throw Exception('Erreur lors de la récupération des utilisateurs');
+        }
+      }
+
+      _users = allUsers;
+      notifyListeners();
+    } catch (error) {
+      debugPrint('Erreur fetchUsers : $error');
+      rethrow;
+    }
+  }
+  Future<void> updateUser(
+      String userId, String name, String email, String role) async {
+    try {
+      final response = await authenticatedRequest(
+        '/users/$userId',
+        method: 'PUT',
+        body: {
+          'name': name,
+          'email': email,
+          'role': role,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final userIndex = _users.indexWhere((user) => user['id'] == userId);
+        if (userIndex != -1) {
+          _users[userIndex] = {
+            'id': userId,
+            'name': name,
+            'email': email,
+            'role': role,
+          };
+          notifyListeners();
+        }
+      } else {
+        throw Exception('Erreur mise à jour utilisateur. Code: ${response.statusCode}');
+      }
+    } catch (error) {
+      debugPrint('Erreur updateUser : $error');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteUser(String userId) async {
+    try {
+      final response = await authenticatedRequest('/users/$userId', method: 'DELETE');
+      if (response.statusCode == 204) {
+        _users.removeWhere((user) => user['id'] == userId);
+        notifyListeners();
+      } else {
+        throw Exception('Erreur lors de la suppression de l\'utilisateur');
+      }
+    } catch (error) {
+      debugPrint('Erreur deleteUser : $error');
+      rethrow;
+    }
+  }
+
+
+
 }

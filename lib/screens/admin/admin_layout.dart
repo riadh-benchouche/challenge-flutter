@@ -47,7 +47,7 @@ class AdminLayout extends StatelessWidget {
 
   int _getSelectedIndex(BuildContext context) {
     final String location =
-    GoRouter.of(context).routerDelegate.currentConfiguration.uri.toString();
+        GoRouter.of(context).routerDelegate.currentConfiguration.uri.toString();
     if (location == '/admin') return 0;
     if (location.startsWith('/admin/users')) return 1;
     if (location.startsWith('/admin/pending-associations')) return 2;
