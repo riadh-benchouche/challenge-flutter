@@ -31,39 +31,32 @@ class TopAssociationCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   child: imageSrc == ''
                       ? Image.asset(
-                    'assets/images/association-1.jpg',
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  )
+                          'assets/images/association-1.jpg',
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        )
                       : Image.network(
-                    'https://invooce.online/$imageSrc',
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Image.asset(
-                        'assets/images/association-1.jpg',
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      );
-                    },
-                  ),
+                          'https://invooce.online/$imageSrc',
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              'assets/images/association-1.jpg',
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            );
+                          },
+                        ),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 name,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '$userCount membres',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                ),
               ),
             ],
           ),

@@ -96,17 +96,8 @@ class AssociationCard extends StatelessWidget {
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: Colors.grey[600],
                     ),
-                    maxLines: 2,
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  // Stats
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildStat(context, Icons.event, eventCount.toString()),
-                      _buildStat(context, Icons.person, userCount.toString()),
-                    ],
                   ),
                 ],
               ),

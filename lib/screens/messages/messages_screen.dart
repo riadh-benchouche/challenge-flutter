@@ -107,7 +107,11 @@ class _MessagesScreenState extends State<MessagesScreen>
                     leading: CircleAvatar(
                       radius: 25,
                       backgroundColor: Colors.grey[200],
-                      child: Icon(Icons.group, color: Colors.grey[400]),
+                      backgroundImage: association.imageUrl.isEmpty
+                          ? const AssetImage('assets/images/association-1.jpg')
+                          : NetworkImage(
+                              'https://invooce.online/${association.imageUrl}',
+                            ),
                     ),
                     title: Text(
                       association.name,
