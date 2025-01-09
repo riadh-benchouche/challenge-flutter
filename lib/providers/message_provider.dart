@@ -9,26 +9,26 @@ import 'dart:convert';
 
 class MessageProvider with ChangeNotifier {
   final UserProvider userProvider;
-  late WebSocketService _webSocketService;
+  WebSocketService _webSocketService;
   final Map<String, List<Message>> _messages = {};
   Association? _currentAssociation;
   List<Association> _userAssociations = [];
+  bool _initialized = false;
 
-  MessageProvider({required this.userProvider}) {
-    initWebSocket();
-  }
+  MessageProvider({required this.userProvider})
+      : _webSocketService = WebSocketService(token: userProvider.token ?? '');
 
   List<Association> get userAssociations => _userAssociations;
 
   Association? get currentAssociation => _currentAssociation;
 
-  void initWebSocket() {
+  Future<void> initWebSocket() async {
+    if (_initialized) return;
+
     if (userProvider.token == null || userProvider.token!.isEmpty) {
-      debugPrint('No token available, skipping WebSocket initialization');
       return;
     }
 
-    debugPrint('Initializing WebSocket with token');
     _webSocketService = WebSocketService(token: userProvider.token!);
     _webSocketService.onMessageReceived = _handleNewMessage;
     _webSocketService.onError = (error) {
@@ -37,7 +37,11 @@ class MessageProvider with ChangeNotifier {
     _webSocketService.onConnectionClosed = () {
       debugPrint('WebSocket connection closed in provider');
     };
+
+    await Future.delayed(const Duration(
+        milliseconds: 500)); // Petit délai pour s'assurer que tout est prêt
     _webSocketService.connect();
+    _initialized = true;
   }
 
   @override
@@ -123,6 +127,10 @@ class MessageProvider with ChangeNotifier {
   }
 
   Future<void> sendMessage(String content, String associationId) async {
+    if (userProvider.token == null || userProvider.token!.isEmpty) {
+      throw Exception('No token available');
+    }
+
     final message = Message(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       content: content,
@@ -134,11 +142,11 @@ class MessageProvider with ChangeNotifier {
     );
 
     try {
-      // Ne plus ajouter le message localement ici
-      // Laisser le WebSocket gérer l'ajout quand il reçoit la confirmation
-      _webSocketService.sendMessage(message);
+      await _webSocketService.sendMessage(message);
     } catch (e) {
       debugPrint('Error sending message: $e');
+      // Tenter de réinitialiser la connexion en cas d'erreur
+      await initWebSocket();
       throw Exception('Cannot send message: $e');
     }
   }

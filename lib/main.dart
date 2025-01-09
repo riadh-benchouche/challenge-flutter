@@ -98,15 +98,20 @@ Future<void> main() async {
           update: (context, userProvider, previous) {
             if (previous == null) {
               final provider = MessageProvider(userProvider: userProvider);
-              provider.initWebSocket();
+              // Attendre que le token soit disponible
+              if (userProvider.token != null && userProvider.token!.isNotEmpty) {
+                Future.microtask(() => provider.initWebSocket());
+              }
               return provider;
             }
 
             // Réinitialiser le WebSocket si le token a changé
-            if (previous.userProvider.token != userProvider.token) {
+            if (previous.userProvider.token != userProvider.token &&
+                userProvider.token != null &&
+                userProvider.token!.isNotEmpty) {
               previous.dispose();
               final provider = MessageProvider(userProvider: userProvider);
-              provider.initWebSocket();
+              Future.microtask(() => provider.initWebSocket());
               return provider;
             }
 

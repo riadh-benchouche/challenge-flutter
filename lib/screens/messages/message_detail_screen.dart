@@ -22,6 +22,10 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('MessageDetailScreen initialized');
+    debugPrint('Room ID: ${widget.roomId}');
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    debugPrint('Token available: ${userProvider.token != null}');
     _loadMessages();
   }
 
@@ -55,17 +59,22 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final messageProvider =
-          Provider.of<MessageProvider>(context, listen: false);
+      debugPrint('Attempting to send message');
+      final messageProvider = Provider.of<MessageProvider>(context, listen: false);
       await messageProvider.sendMessage(
         _messageController.text.trim(),
         widget.roomId,
       );
+      debugPrint('Message sent successfully');
       _messageController.clear();
       _scrollToBottom();
     } catch (e) {
+      debugPrint('Error sending message: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur: ${e.toString()}')),
+        SnackBar(
+          content: Text('Erreur: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       setState(() => _isLoading = false);

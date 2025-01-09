@@ -10,13 +10,19 @@ class WebSocketService {
   Function()? onConnectionClosed;
   Function(dynamic)? onError;
   bool _isConnected = false;
+  int _reconnectAttempts = 0;
+  static const int _maxReconnectAttempts = 5;
 
   WebSocketService({required this.token}) {
-    debugPrint('WebSocketService initialized with token');
+    debugPrint('WebSocketService initialized with token length: ${token.length}');
   }
 
-  void connect() {
-    if (_isConnected) return;
+  Future<bool> connect() async {
+    if (_isConnected) return true;
+    if (token.isEmpty) {
+      debugPrint('Token is empty, not connecting');
+      return false;
+    }
 
     try {
       debugPrint('Attempting to connect to WebSocket...');
@@ -33,15 +39,21 @@ class WebSocketService {
         pingInterval: const Duration(seconds: 30),
       );
 
-      debugPrint('WebSocket connection initiated');
-      _isConnected = true;
+      // Attendre que la connexion soit établie
+      bool connectionEstablished = false;
+      await Future.delayed(const Duration(seconds: 1));
 
       _channel?.stream.listen(
-        (data) {
+            (data) {
           try {
             debugPrint('WebSocket received: $data');
-            final message = Message.fromJson(jsonDecode(data));
-            onMessageReceived?.call(message);
+            if (data is String) {
+              final message = Message.fromJson(jsonDecode(data));
+              connectionEstablished = true;
+              _isConnected = true;
+              _reconnectAttempts = 0;
+              onMessageReceived?.call(message);
+            }
           } catch (e, stackTrace) {
             debugPrint('Error parsing message: $e');
             debugPrint('Stack trace: $stackTrace');
@@ -51,39 +63,43 @@ class WebSocketService {
         onError: (error, stackTrace) {
           debugPrint('WebSocket error: $error');
           debugPrint('Stack trace: $stackTrace');
-          _isConnected = false;
-          onError?.call(error);
-          _reconnect();
+          _handleDisconnect('Error: $error');
         },
         onDone: () {
           debugPrint('WebSocket connection closed');
-          _isConnected = false;
-          onConnectionClosed?.call();
-          _reconnect();
+          _handleDisconnect('Connection closed');
         },
+        cancelOnError: false,
       );
+
+      _isConnected = true;
+      debugPrint('WebSocket connection established');
+      return true;
     } catch (e, stackTrace) {
       debugPrint('Connection error: $e');
       debugPrint('Stack trace: $stackTrace');
-      _isConnected = false;
-      onError?.call(e);
-      _reconnect();
+      _handleDisconnect(e.toString());
+      return false;
     }
   }
 
-  void _reconnect() {
-    if (!_isConnected) {
-      Future.delayed(const Duration(seconds: 3), () {
-        connect();
-      });
+  Future<bool> waitForConnection() async {
+    int attempts = 0;
+    while (!_isConnected && attempts < 10) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
     }
+    return _isConnected;
   }
 
-  void sendMessage(Message message) {
-    if (!_isConnected) {
+  Future<void> sendMessage(Message message) async {
+    if (!_isConnected || _channel == null) {
       debugPrint('Not connected, attempting to connect before sending message');
-      connect();
-      return;
+      final connected = await connect();
+      if (!connected) {
+        throw Exception('WebSocket connection failed');
+      }
+      await waitForConnection();
     }
 
     try {
@@ -94,15 +110,45 @@ class WebSocketService {
 
       debugPrint('Sending message: $data');
       _channel?.sink.add(data);
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Send message error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      _handleDisconnect('Send error: $e');
       throw Exception('Failed to send message: $e');
+    }
+  }
+
+  void _handleDisconnect(String reason) {
+    if (_isConnected) {
+      debugPrint('WebSocket disconnected: $reason');
+      _isConnected = false;
+      onConnectionClosed?.call();
+    }
+    _reconnect();
+  }
+
+  void _reconnect() {
+    if (!_isConnected && _reconnectAttempts < _maxReconnectAttempts) {
+      _reconnectAttempts++;
+      final delay = Duration(seconds: _reconnectAttempts * 2);
+      debugPrint(
+          'Attempting reconnection $_reconnectAttempts of $_maxReconnectAttempts in ${delay.inSeconds} seconds');
+
+      Future.delayed(delay, () {
+        if (!_isConnected) {
+          connect();
+        }
+      });
+    } else if (_reconnectAttempts >= _maxReconnectAttempts) {
+      debugPrint('Max reconnection attempts reached');
+      onError?.call('Max reconnection attempts reached');
     }
   }
 
   void dispose() {
     debugPrint('Disposing WebSocket service');
     _isConnected = false;
+    _reconnectAttempts = 0;
     _channel?.sink.close();
     _channel = null;
   }
