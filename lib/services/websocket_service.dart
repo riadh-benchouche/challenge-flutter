@@ -14,7 +14,8 @@ class WebSocketService {
   static const int _maxReconnectAttempts = 5;
 
   WebSocketService({required this.token}) {
-    debugPrint('WebSocketService initialized with token length: ${token.length}');
+    debugPrint(
+        'WebSocketService initialized with token length: ${token.length}');
   }
 
   Future<bool> connect() async {
@@ -28,7 +29,7 @@ class WebSocketService {
       debugPrint('Attempting to connect to WebSocket...');
 
       _channel = IOWebSocketChannel.connect(
-        Uri.parse('wss://invooce.online/ws'),
+        Uri.parse('ws://10.0.2.2:3000/ws'),
         headers: {
           'Authorization': 'Bearer $token',
           'Connection': 'Upgrade',
@@ -40,16 +41,14 @@ class WebSocketService {
       );
 
       // Attendre que la connexion soit établie
-      bool connectionEstablished = false;
       await Future.delayed(const Duration(seconds: 1));
 
       _channel?.stream.listen(
-            (data) {
+        (data) {
           try {
             debugPrint('WebSocket received: $data');
             if (data is String) {
               final message = Message.fromJson(jsonDecode(data));
-              connectionEstablished = true;
               _isConnected = true;
               _reconnectAttempts = 0;
               onMessageReceived?.call(message);

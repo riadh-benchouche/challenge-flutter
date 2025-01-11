@@ -1,9 +1,8 @@
 import 'package:challenge_flutter/models/event.dart';
-import 'package:challenge_flutter/providers/event_provider.dart';
+import 'package:challenge_flutter/services/event_service.dart';
 import 'package:challenge_flutter/widgets/home/event_card_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 class EventScreen extends StatefulWidget {
   const EventScreen({super.key});
@@ -13,9 +12,14 @@ class EventScreen extends StatefulWidget {
 }
 
 class _EventScreenState extends State<EventScreen>
-    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
-  FocusNode _focusNode = FocusNode(); // Initialisation directe
+  final FocusNode _focusNode = FocusNode();
+  bool _isLoadingAssoc = false;
+  bool _isLoadingParticipating = false;
+  List<Event>? _associationEvents;
+  List<Event>? _participatingEvents;
+  String? _error;
 
   @override
   bool get wantKeepAlive => true;
@@ -24,14 +28,12 @@ class _EventScreenState extends State<EventScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        final eventProvider = Provider.of<EventProvider>(context, listen: false);
-        if (eventProvider.shouldSwitchToParticipating) {
+        if (EventService.shouldSwitchToParticipating) {
           _tabController.animateTo(1);
-          eventProvider.resetSwitchFlag();
+          EventService.resetSwitchFlag();
         }
         _loadEvents();
       }
@@ -48,64 +50,86 @@ class _EventScreenState extends State<EventScreen>
   void dispose() {
     _tabController.dispose();
     _focusNode.dispose();
-    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   Future<void> _loadEvents() async {
     if (!mounted) return;
 
-    final eventProvider = Provider.of<EventProvider>(context, listen: false);
+    setState(() {
+      _error = null;
+      if (_tabController.index == 0) {
+        _isLoadingAssoc = true;
+      } else {
+        _isLoadingParticipating = true;
+      }
+    });
+
     try {
       if (_tabController.index == 0) {
-        await eventProvider.fetchAssociationEvents();
+        _associationEvents = await EventService.getAssociationEvents();
       } else {
-        await eventProvider.fetchParticipatingEvents();
+        _participatingEvents = await EventService.getParticipatingEvents();
       }
     } catch (e) {
-      debugPrint('Error loading events: $e');
+      if (mounted) {
+        setState(() => _error = e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingAssoc = false;
+          _isLoadingParticipating = false;
+        });
+      }
     }
   }
 
-  Widget _buildEventsList(List<Event>? events) {
-    return Consumer<EventProvider>(
-      builder: (context, eventProvider, _) {
-        final isLoading = _tabController.index == 0
-            ? eventProvider.isLoadingAssociations
-            : eventProvider.isLoadingParticipations;
+  Widget _buildEventsList(List<Event>? events, bool isLoading) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-        if (isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(),
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Erreur: $_error'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadEvents,
+              child: const Text('Réessayer'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (events == null || events.isEmpty) {
+      return const Center(
+        child: Text('Aucun événement trouvé'),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadEvents,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        itemCount: events.length,
+        itemBuilder: (context, index) {
+          final event = events[index];
+          return EventCard(
+            eventId: event.id,
+            eventName: event.name,
+            eventDate: event.date.toString(),
+            eventLocation: event.location,
+            eventAssociation: event.associationName,
+            eventCategory: event.categoryName,
+            theme: Theme.of(context),
           );
-        }
-
-        if (events == null || events.isEmpty) {
-          return const Center(
-            child: Text('Aucun événement trouvé'),
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: () async => _loadEvents(),
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-            itemCount: events.length,
-            itemBuilder: (context, index) {
-              final event = events[index];
-              return EventCard(
-                eventId: event.id,
-                eventName: event.name,
-                eventDate: event.date.toString(),
-                eventLocation: event.location,
-                eventAssociation: event.associationName,
-                eventCategory: event.categoryName,
-                theme: Theme.of(context),
-              );
-            },
-          ),
-        );
-      },
+        },
+      ),
     );
   }
 
@@ -113,13 +137,12 @@ class _EventScreenState extends State<EventScreen>
   Widget build(BuildContext context) {
     super.build(context);
     final theme = Theme.of(context);
-    final eventProvider = Provider.of<EventProvider>(context);
+    final canCreateEvent = EventService.canCreateEvent;
 
     return Focus(
       focusNode: _focusNode,
       onFocusChange: (hasFocus) {
         if (hasFocus) {
-          debugPrint('EventScreen - Gained focus');
           _loadEvents();
         }
       },
@@ -154,28 +177,25 @@ class _EventScreenState extends State<EventScreen>
               ),
             ),
             Expanded(
-              child: Consumer<EventProvider>(
-                builder: (context, eventProvider, _) {
-                  return TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildEventsList(eventProvider.associationEvents),
-                      _buildEventsList(eventProvider.participatingEvents),
-                    ],
-                  );
-                },
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildEventsList(_associationEvents, _isLoadingAssoc),
+                  _buildEventsList(
+                      _participatingEvents, _isLoadingParticipating),
+                ],
               ),
             ),
           ],
         ),
-        floatingActionButton: eventProvider.canCreateEvent
+        floatingActionButton: canCreateEvent
             ? FloatingActionButton.extended(
-          heroTag: 'createEventFAB',
-          onPressed: () => context.go('/events/create-event'),
-          backgroundColor: theme.primaryColor,
-          icon: const Icon(Icons.add),
-          label: const Text('Nouvel événement'),
-        )
+                heroTag: 'createEventFAB',
+                onPressed: () => context.go('/events/create-event'),
+                backgroundColor: theme.primaryColor,
+                icon: const Icon(Icons.add),
+                label: const Text('Nouvel événement'),
+              )
             : null,
       ),
     );

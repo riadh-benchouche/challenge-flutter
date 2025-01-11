@@ -1,10 +1,10 @@
 import 'dart:io';
 
+import 'package:challenge_flutter/models/association.dart';
+import 'package:challenge_flutter/services/association_service.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:challenge_flutter/providers/association_provider.dart';
 
 class EditAssociationScreen extends StatefulWidget {
   final String associationId;
@@ -22,12 +22,13 @@ class _EditAssociationScreenState extends State<EditAssociationScreen> {
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
   File? _image;
-  late Future<void> _loadDataFuture;
+  Association? _association;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadDataFuture = _loadAssociationData();
+    _loadAssociationData();
   }
 
   Future<void> _pickImage() async {
@@ -50,11 +51,21 @@ class _EditAssociationScreenState extends State<EditAssociationScreen> {
   }
 
   Future<void> _loadAssociationData() async {
-    final provider = Provider.of<AssociationProvider>(context, listen: false);
-    final association = await provider.fetchAssociationById(widget.associationId);
-
-    _nameController.text = association.name;
-    _descriptionController.text = association.description;
+    try {
+      final association = await AssociationService.getAssociationById(widget.associationId);
+      if (mounted) {
+        setState(() {
+          _association = association;
+          _nameController.text = association.name;
+          _descriptionController.text = association.description;
+          _error = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString());
+      }
+    }
   }
 
   @override
@@ -90,10 +101,8 @@ class _EditAssociationScreenState extends State<EditAssociationScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final provider = Provider.of<AssociationProvider>(context, listen: false);
-
       // Mise à jour des infos de base
-      await provider.updateAssociation(
+      await AssociationService.updateAssociation(
         widget.associationId,
         _nameController.text.trim(),
         _descriptionController.text.trim(),
@@ -101,7 +110,7 @@ class _EditAssociationScreenState extends State<EditAssociationScreen> {
 
       // Si une nouvelle image a été sélectionnée
       if (_image != null) {
-        await provider.uploadAssociationImage(widget.associationId, _image!);
+        await AssociationService.uploadAssociationImage(widget.associationId, _image!);
       }
 
       if (mounted) {
@@ -133,99 +142,107 @@ class _EditAssociationScreenState extends State<EditAssociationScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Erreur'),
+          backgroundColor: theme.primaryColor,
+          foregroundColor: Colors.white,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Erreur: $_error'),
+              ElevatedButton(
+                onPressed: _loadAssociationData,
+                child: const Text('Réessayer'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_association == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Modifier l\'association'),
         backgroundColor: theme.primaryColor,
         foregroundColor: Colors.white,
       ),
-      body: FutureBuilder(
-        future: _loadDataFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('Erreur: ${snapshot.error}'),
-            );
-          }
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Column(
-                      children: [
-                        if (_image != null)
-                          CircleAvatar(
-                            radius: 60,
-                            backgroundImage: FileImage(_image!),
-                          )
-                        else
-                          Consumer<AssociationProvider>(
-                            builder: (context, provider, _) {
-                              final association = provider.currentAssociation;
-                              return CircleAvatar(
-                                radius: 60,
-                                backgroundImage: association?.imageUrl != null
-                                    ? NetworkImage('${provider.userProvider.baseUrl}/${association!.imageUrl}')
-                                    : null,
-                                child: association?.imageUrl == null
-                                    ? const Icon(Icons.group, size: 60)
-                                    : null,
-                              );
-                            },
-                          ),
-                        TextButton.icon(
-                          onPressed: _pickImage,
-                          icon: const Icon(Icons.image),
-                          label: const Text('Changer l\'image'),
-                        ),
-                      ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Column(
+                  children: [
+                    if (_image != null)
+                      CircleAvatar(
+                        radius: 60,
+                        backgroundImage: FileImage(_image!),
+                      )
+                    else
+                      CircleAvatar(
+                        radius: 60,
+                        backgroundImage: _association?.imageUrl != null
+                            ? NetworkImage('${AssociationService.baseUrl}/${_association!.imageUrl}')
+                            : null,
+                        child: _association?.imageUrl == null
+                            ? const Icon(Icons.group, size: 60)
+                            : null,
+                      ),
+                    TextButton.icon(
+                      onPressed: _pickImage,
+                      icon: const Icon(Icons.image),
+                      label: const Text('Changer l\'image'),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nom de l\'association',
-                      hintText: 'Entrez le nom de l\'association',
-                    ),
-                    validator: _validateName,
-                    enabled: !_isLoading,
-                  ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    controller: _descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                      hintText: 'Décrivez votre association',
-                    ),
-                    validator: _validateDescription,
-                    maxLines: 4,
-                    enabled: !_isLoading,
-                  ),
-                  const SizedBox(height: 30),
-                  SizedBox(
-                    height: 50,
-                    child: _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : ElevatedButton(
-                      onPressed: _handleSubmit,
-                      child: const Text('Mettre à jour l\'association'),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nom de l\'association',
+                  hintText: 'Entrez le nom de l\'association',
+                ),
+                validator: _validateName,
+                enabled: !_isLoading,
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  hintText: 'Décrivez votre association',
+                ),
+                validator: _validateDescription,
+                maxLines: 4,
+                enabled: !_isLoading,
+              ),
+              const SizedBox(height: 30),
+              SizedBox(
+                height: 50,
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ElevatedButton(
+                  onPressed: _handleSubmit,
+                  child: const Text('Mettre à jour l\'association'),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

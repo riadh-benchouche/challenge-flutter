@@ -1,7 +1,6 @@
+import 'package:challenge_flutter/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'package:challenge_flutter/providers/user_provider.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key, required this.controller});
@@ -78,15 +77,21 @@ class _SignupScreenState extends State<SignupScreen> {
     });
 
     try {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      await userProvider.register(
+      await AuthService.register(
         _nameController.text.trim(),
         _emailController.text.trim(),
         _passController.text.trim(),
-        context, // Passez le `BuildContext` ici
+        context,
       );
     } catch (error) {
-      // Gestion de l'erreur est déjà intégrée dans UserProvider, rien à ajouter ici
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -204,9 +209,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       child: _isLoading
                           ? const Center(child: CircularProgressIndicator())
                           : ElevatedButton(
-                        onPressed: _handleSignup,
-                        child: const Text('Créer un compte'),
-                      ),
+                              onPressed: _handleSignup,
+                              child: const Text('Créer un compte'),
+                            ),
                     ),
                     const SizedBox(height: 15),
                     Row(

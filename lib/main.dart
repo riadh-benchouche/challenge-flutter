@@ -1,154 +1,66 @@
-import 'package:challenge_flutter/providers/event_provider.dart';
-import 'package:challenge_flutter/providers/home_provider.dart';
-import 'package:challenge_flutter/providers/message_provider.dart';
-import 'package:challenge_flutter/providers/category_provider.dart';
+import 'dart:io';
+
+import 'package:challenge_flutter/screens/admin/manage_users_screen.dart';
+import 'package:challenge_flutter/screens/admin/pending_associations_screen.dart';
 import 'package:challenge_flutter/screens/associations/create_association_screen.dart';
 import 'package:challenge_flutter/screens/associations/edit_association_screen.dart';
+import 'package:challenge_flutter/screens/edit_profile/edit_profile_screen.dart';
 import 'package:challenge_flutter/screens/events/create_event_screen.dart';
 import 'package:challenge_flutter/screens/events/edit_event_screen.dart';
 import 'package:challenge_flutter/screens/layout/admin_layout.dart';
 import 'package:challenge_flutter/screens/layout/main_layout.dart';
+import 'package:challenge_flutter/screens/messages/message_detail_screen.dart';
+import 'package:challenge_flutter/screens/profile/profile_screen.dart';
+import 'package:challenge_flutter/services/auth_service.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'providers/association_provider.dart';
-import 'providers/user_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/events/event_detail_screen.dart';
 import 'screens/associations/association_detail_screen.dart';
-import 'screens/messages/message_detail_screen.dart';
-import 'screens/profile/profile_screen.dart';
-import 'screens/edit_profile/edit_profile_screen.dart';
 import 'screens/associations/join_association_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
-import 'screens/admin/manage_users_screen.dart';
-import 'screens/admin/pending_associations_screen.dart';
 import 'screens/admin/manage_categories_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  HttpOverrides.global = MyHttpOverrides();
   await initializeDateFormatting('fr_FR', null);
+  await AuthService.initializeApp();
 
-  final userProvider = UserProvider();
-  await userProvider.initializeApp();
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: userProvider),
-
-        // Ajout du CategoryProvider
-        ChangeNotifierProxyProvider<UserProvider, CategoryProvider>(
-          create: (context) => CategoryProvider(
-            userProvider: Provider.of<UserProvider>(context, listen: false),
-          ),
-          update: (context, userProvider, previous) => updateProvider(context,
-              userProvider, (u) => CategoryProvider(userProvider: u), previous),
-        ),
-
-        ChangeNotifierProxyProvider<UserProvider, AssociationProvider>(
-            create: (context) => AssociationProvider(
-                  userProvider:
-                      Provider.of<UserProvider>(context, listen: false),
-                ),
-            update: (context, userProvider, previous) {
-              final provider =
-                  previous ?? AssociationProvider(userProvider: userProvider);
-              if (previous == null) provider.initApiService();
-              return provider;
-            }),
-
-        ChangeNotifierProxyProvider<UserProvider, EventProvider>(
-          create: (context) => EventProvider(
-            userProvider: Provider.of<UserProvider>(context, listen: false),
-          ),
-          update: (context, userProvider, previous) {
-            final provider =
-                previous ?? EventProvider(userProvider: userProvider);
-            if (previous == null) provider.initEventService();
-            return provider;
-          },
-        ),
-        ChangeNotifierProxyProvider<UserProvider, HomeProvider>(
-          create: (context) => HomeProvider(
-            userProvider: Provider.of<UserProvider>(context, listen: false),
-          ),
-          update: (context, userProvider, previous) {
-            final provider =
-                previous ?? HomeProvider(userProvider: userProvider);
-            if (previous == null) {
-              provider.initHomeService();
-            }
-            return provider;
-          },
-        ),
-
-        ChangeNotifierProxyProvider<UserProvider, MessageProvider>(
-          create: (context) {
-            final provider = MessageProvider(
-              userProvider: Provider.of<UserProvider>(context, listen: false),
-            );
-            provider.initWebSocket(); // Initialize WebSocket immediately
-            return provider;
-          },
-          update: (context, userProvider, previous) {
-            if (previous == null) {
-              final provider = MessageProvider(userProvider: userProvider);
-              // Attendre que le token soit disponible
-              if (userProvider.token != null && userProvider.token!.isNotEmpty) {
-                Future.microtask(() => provider.initWebSocket());
-              }
-              return provider;
-            }
-
-            // Réinitialiser le WebSocket si le token a changé
-            if (previous.userProvider.token != userProvider.token &&
-                userProvider.token != null &&
-                userProvider.token!.isNotEmpty) {
-              previous.dispose();
-              final provider = MessageProvider(userProvider: userProvider);
-              Future.microtask(() => provider.initWebSocket());
-              return provider;
-            }
-
-            return previous;
-          },
-        ),
-      ],
-      child: const MyApp(),
-    ),
-  );
+  if (AuthService.token == null || AuthService.userData?['id'] == null) {
+    await AuthService.logout();
+  }
+  runApp(const MyApp());
 }
 
-T updateProvider<T extends ChangeNotifier>(
-  BuildContext context,
-  UserProvider userProvider,
-  T Function(UserProvider) createProvider,
-  T? previous,
-) {
-  return userProvider.token != null && userProvider.userData != null
-      ? createProvider(userProvider)
-      : previous ?? createProvider(userProvider);
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
 }
 
 final GoRouter _router = GoRouter(
   redirect: (BuildContext context, GoRouterState state) {
-    // Accès au UserProvider pour vérifier si l'utilisateur est connecté
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (!AuthService.initialized) return null;
 
-    if (!userProvider.initialized) return null;
+    final isLoggedIn = AuthService.isLoggedIn &&
+        AuthService.token != null &&
+        AuthService.userData?['id'] != null;
 
-    final isLoggedIn = userProvider.isLoggedIn;
-    final isAdmin = userProvider.isAdmin;
+    final isAdmin = AuthService.isAdmin;
 
     final isPublicRoute =
         state.uri.toString() == '/login' || state.uri.toString() == '/register';
 
     if (!isLoggedIn && !isPublicRoute) {
+      AuthService.logout();
       return '/login';
     }
 
@@ -156,15 +68,7 @@ final GoRouter _router = GoRouter(
       return '/admin';
     }
 
-    if (isAdmin && state.uri.toString().startsWith('/admin')) {
-      return null;
-    }
-
     if (isLoggedIn && isPublicRoute) {
-      return '/';
-    }
-
-    if (state.uri.toString().startsWith('/admin') && !isAdmin) {
       return '/';
     }
 

@@ -1,10 +1,12 @@
 import 'package:challenge_flutter/models/association.dart';
-import 'package:challenge_flutter/providers/association_provider.dart';
+import 'package:challenge_flutter/models/event.dart';
+import 'package:challenge_flutter/services/association_service.dart';
+import 'package:challenge_flutter/services/auth_service.dart';
+import 'package:challenge_flutter/services/category_service.dart';
+import 'package:challenge_flutter/services/event_service.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:challenge_flutter/providers/event_provider.dart';
 import 'package:challenge_flutter/models/category_model.dart';
 
 class EditEventScreen extends StatefulWidget {
@@ -25,6 +27,8 @@ class _EditEventScreenState extends State<EditEventScreen> {
   String? _selectedCategoryId;
   String? _selectedAssociationId;
   bool _isLoading = false;
+  List<CategoryModel> _categories = [];
+  List<Association> _associations = [];
   late Future<void> _loadDataFuture;
 
   @override
@@ -34,16 +38,31 @@ class _EditEventScreenState extends State<EditEventScreen> {
   }
 
   Future<void> _loadEventData() async {
-    final provider = Provider.of<EventProvider>(context, listen: false);
-    final event = await provider.fetchEventById(widget.eventId);
-    await provider.fetchCategories(); // Charger les catégories
+    try {
+      final results = await Future.wait([
+        EventService.getEventById(widget.eventId),
+        CategoryService.fetchCategories(),
+        AssociationService.getAssociationsByUser(AuthService.userData!['id']),
+      ]);
 
-    _nameController.text = event.name;
-    _descriptionController.text = event.description;
-    _locationController.text = event.location;
-    _selectedDate = event.date;
-    _selectedCategoryId = event.categoryId;
-    _selectedAssociationId = event.associationId;
+      final event = results[0] as Event;
+      _categories = results[1] as List<CategoryModel>;
+      _associations = results[2] as List<Association>;
+
+      if (mounted) {
+        setState(() {
+          _nameController.text = event.name;
+          _descriptionController.text = event.description;
+          _locationController.text = event.location;
+          _selectedDate = event.date;
+          _selectedCategoryId = event.categoryId;
+          _selectedAssociationId = event.associationId;
+        });
+      }
+    } catch (e) {
+      debugPrint('Erreur lors du chargement des données: $e');
+      rethrow;
+    }
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -142,16 +161,14 @@ class _EditEventScreenState extends State<EditEventScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final provider = Provider.of<EventProvider>(context, listen: false);
-
-      await provider.updateEvent(
-          widget.eventId,
-          _nameController.text.trim(),
-          _descriptionController.text.trim(),
-          _selectedDate!,
-          _locationController.text.trim(),
-          _selectedCategoryId!,
-          _selectedAssociationId!);
+      await EventService.updateEvent(
+          eventId: widget.eventId,
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim(),
+          date: _selectedDate!,
+          location: _locationController.text.trim(),
+          categoryId: _selectedCategoryId!,
+          associationId: _selectedAssociationId!);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -197,7 +214,20 @@ class _EditEventScreenState extends State<EditEventScreen> {
 
           if (snapshot.hasError) {
             return Center(
-              child: Text('Erreur: ${snapshot.error}'),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Erreur: ${snapshot.error}'),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _loadDataFuture = _loadEventData();
+                      });
+                    },
+                    child: const Text('Réessayer'),
+                  ),
+                ],
+              ),
             );
           }
 
@@ -255,58 +285,51 @@ class _EditEventScreenState extends State<EditEventScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Consumer<EventProvider>(
-                    builder: (context, provider, _) {
-                      final categories = provider.categories ?? [];
-                      return DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: 'Catégorie',
-                          border: OutlineInputBorder(),
-                        ),
-                        value: _selectedCategoryId,
-                        items: categories.map((CategoryModel category) {
-                          return DropdownMenuItem<String>(
-                            value: category.id,
-                            child: Text(category.name),
-                          );
-                        }).toList(),
-                        onChanged: !_isLoading
-                            ? (String? value) {
-                                setState(() {
-                                  _selectedCategoryId = value;
-                                });
-                              }
-                            : null,
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: 'Catégorie',
+                      border: OutlineInputBorder(),
+                    ),
+                    value: _selectedCategoryId,
+                    items: _categories.map((CategoryModel category) {
+                      return DropdownMenuItem<String>(
+                        value: category.id,
+                        child: Text(category.name),
                       );
-                    },
+                    }).toList(),
+                    onChanged: !_isLoading
+                        ? (String? value) {
+                            setState(() {
+                              _selectedCategoryId = value;
+                            });
+                          }
+                        : null,
                   ),
                   const SizedBox(height: 20),
-                  Consumer<AssociationProvider>(
-                    builder: (context, provider, _) {
-                      final associations = provider.associations ?? [];
-                      return DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: 'Association',
-                          border: OutlineInputBorder(),
-                        ),
-                        value: _selectedAssociationId,
-                        items: associations.map((Association association) {
-                          return DropdownMenuItem<String>(
-                            value: association.id,
-                            child: Text(association.name),
-                          );
-                        }).toList(),
-                        onChanged: !_isLoading
-                            ? (String? value) {
-                                setState(() {
-                                  _selectedAssociationId = value;
-                                });
-                              }
-                            : null,
+
+                  // Remplacer le Consumer<AssociationService> par un DropdownButtonFormField simple
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: 'Association',
+                      border: OutlineInputBorder(),
+                    ),
+                    value: _selectedAssociationId,
+                    items: _associations.map((Association association) {
+                      return DropdownMenuItem<String>(
+                        value: association.id,
+                        child: Text(association.name),
                       );
-                    },
+                    }).toList(),
+                    onChanged: !_isLoading
+                        ? (String? value) {
+                            setState(() {
+                              _selectedAssociationId = value;
+                            });
+                          }
+                        : null,
                   ),
                   const SizedBox(height: 30),
+
                   SizedBox(
                     height: 50,
                     child: _isLoading

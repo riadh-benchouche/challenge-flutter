@@ -1,7 +1,5 @@
+import 'package:challenge_flutter/services/auth_service.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import '../../providers/user_provider.dart';
 
 class ManageUsersScreen extends StatefulWidget {
   const ManageUsersScreen({Key? key}) : super(key: key);
@@ -24,7 +22,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       _isLoading = true;
     });
     try {
-      await Provider.of<UserProvider>(context, listen: false).fetchUsers();
+      await AuthService.fetchUsers();
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -102,7 +100,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                       return;
                     }
                     try {
-                      await Provider.of<UserProvider>(context, listen: false).updateUser(
+                      await AuthService.updateUser(
                         user['id'],
                         nameController.text,
                         emailController.text,
@@ -149,7 +147,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
           ElevatedButton(
             onPressed: () async {
               try {
-                await Provider.of<UserProvider>(context, listen: false).deleteUser(userId);
+                await AuthService.deleteUser(userId);
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -176,8 +174,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
-    final users = userProvider.users;
+    final users = AuthService.users;
 
     return Scaffold(
       appBar: AppBar(
@@ -228,3 +225,4 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     );
   }
 }
+

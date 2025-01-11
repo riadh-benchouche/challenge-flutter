@@ -1,7 +1,6 @@
-import 'package:challenge_flutter/providers/association_provider.dart';
+import 'package:challenge_flutter/services/association_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 class JoinAssociationScreen extends StatefulWidget {
   const JoinAssociationScreen({super.key});
@@ -13,12 +12,6 @@ class JoinAssociationScreen extends StatefulWidget {
 class _JoinAssociationScreenState extends State<JoinAssociationScreen> {
   final TextEditingController _codeController = TextEditingController();
   bool _isLoading = false;
-
-  @override
-  void dispose() {
-    _codeController.dispose();
-    super.dispose();
-  }
 
   Future<void> _joinAssociation() async {
     final code = _codeController.text.trim();
@@ -35,9 +28,7 @@ class _JoinAssociationScreenState extends State<JoinAssociationScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final associationProvider =
-          Provider.of<AssociationProvider>(context, listen: false);
-      await associationProvider.joinAssociation(code);
+      await AssociationService.joinAssociation(code);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -46,7 +37,7 @@ class _JoinAssociationScreenState extends State<JoinAssociationScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        context.go('/associations'); // Retour à la liste des associations
+        context.go('/associations');
       }
     } catch (error) {
       if (mounted) {

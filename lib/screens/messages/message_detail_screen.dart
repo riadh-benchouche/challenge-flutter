@@ -1,8 +1,7 @@
 import 'package:challenge_flutter/models/message.dart';
-import 'package:challenge_flutter/providers/message_provider.dart';
-import 'package:challenge_flutter/providers/user_provider.dart';
+import 'package:challenge_flutter/services/auth_service.dart';
+import 'package:challenge_flutter/services/message_service.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 class MessageDetailScreen extends StatefulWidget {
@@ -18,14 +17,12 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
+  List<Message> _messages = [];
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    debugPrint('MessageDetailScreen initialized');
-    debugPrint('Room ID: ${widget.roomId}');
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    debugPrint('Token available: ${userProvider.token != null}');
     _loadMessages();
   }
 
@@ -36,11 +33,28 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
     super.dispose();
   }
 
-  void _loadMessages() async {
-    final messageProvider =
-        Provider.of<MessageProvider>(context, listen: false);
-    await messageProvider.loadMessages(widget.roomId);
-    _scrollToBottom();
+  Future<void> _loadMessages() async {
+    if (!mounted) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      await MessageService.loadMessages(widget.roomId);
+      if (mounted) {
+        setState(() {
+          _messages = MessageService.getMessagesForAssociation(widget.roomId);
+          _isLoading = false;
+        });
+        _scrollToBottom();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _scrollToBottom() {
@@ -59,30 +73,31 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
     setState(() => _isLoading = true);
 
     try {
-      debugPrint('Attempting to send message');
-      final messageProvider = Provider.of<MessageProvider>(context, listen: false);
-      await messageProvider.sendMessage(
+      await MessageService.sendMessage(
         _messageController.text.trim(),
         widget.roomId,
       );
-      debugPrint('Message sent successfully');
       _messageController.clear();
-      _scrollToBottom();
+      await _loadMessages();
     } catch (e) {
-      debugPrint('Error sending message: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   Widget _buildMessage(Message message, bool isCurrentUser, ThemeData theme) {
     final time = DateFormat('HH:mm').format(message.createdAt);
+
     return Align(
       alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -137,50 +152,59 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final userProvider = Provider.of<UserProvider>(context);
-    final currentUserId = userProvider.userData?['id'] ?? '';
+    final currentUserId = AuthService.userData?['id'] ?? '';
+    final currentAssociation = MessageService.currentAssociation;
+
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: theme.primaryColor,
+          iconTheme: const IconThemeData(color: Colors.white),
+          title: const Text('Erreur', style: TextStyle(color: Colors.white)),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Erreur: $_error'),
+              ElevatedButton(
+                onPressed: _loadMessages,
+                child: const Text('Réessayer'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: theme.primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: Consumer<MessageProvider>(
-          builder: (context, messageProvider, child) {
-            final association = messageProvider.currentAssociation;
-            return Text(
-              association?.name ?? 'Chargement...',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            );
-          },
+        title: Text(
+          currentAssociation?.name ?? 'Chargement...',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: Column(
         children: [
+          if (_isLoading) const LinearProgressIndicator(),
           Expanded(
-            child: Consumer<MessageProvider>(
-              builder: (context, messageProvider, child) {
-                final messages =
-                    messageProvider.getMessagesForAssociation(widget.roomId);
-
-                if (messages.isEmpty) {
-                  return const Center(child: Text('Aucun message'));
-                }
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(8),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final message = messages[index];
-                    final isCurrentUser = message.senderId == currentUserId;
-                    return _buildMessage(message, isCurrentUser, theme);
-                  },
-                );
-              },
-            ),
+            child: _messages.isEmpty
+                ? const Center(child: Text('Aucun message'))
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(8),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final message = _messages[index];
+                      final isCurrentUser = message.senderId == currentUserId;
+                      return _buildMessage(message, isCurrentUser, theme);
+                    },
+                  ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

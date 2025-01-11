@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:challenge_flutter/models/category_model.dart';
+import 'package:challenge_flutter/models/event.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
-import '../models/event.dart';
+import 'auth_service.dart';
 
 class PaginatedResponse<T> {
   final int limit;
@@ -38,124 +39,162 @@ class PaginatedResponse<T> {
 }
 
 class EventService {
-  final String baseUrl;
-  final String? token;
+  static String get baseUrl => AuthService.baseUrl;
+  static bool _shouldSwitchToParticipating = false;
 
-  EventService({required this.baseUrl, this.token});
+  static List<Event>? _associationEvents;
+  static List<Event>? _participatingEvents;
+  static List<CategoryModel>? _categories;
+  static Event? _currentEvent;
+  static bool _isLoadingAssociations = false;
+  static bool _isLoadingParticipations = false;
 
-  Map<String, String> get headers => {
+  // Getters
+  static List<Event>? get associationEvents => _associationEvents;
+
+  static List<Event>? get participatingEvents => _participatingEvents;
+
+  static List<CategoryModel>? get categories => _categories;
+
+  static Event? get currentEvent => _currentEvent;
+
+  static bool get isLoadingAssociations => _isLoadingAssociations;
+
+  static bool get isLoadingParticipations => _isLoadingParticipations;
+
+  static bool get shouldSwitchToParticipating => _shouldSwitchToParticipating;
+
+  static bool get canCreateEvent =>
+      AuthService.userData?['role'] == 'association_leader';
+
+  static void resetSwitchFlag() {
+    _shouldSwitchToParticipating = false;
+  }
+
+  static Map<String, String> get _headers => {
         'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
+        if (AuthService.token != null)
+          'Authorization': 'Bearer ${AuthService.token}',
       };
 
-  Future<List<Event>> getAssociationEvents() async {
+  static Future<List<Event>> getAssociationEvents() async {
+    if (_isLoadingAssociations) return _associationEvents ?? [];
+
     try {
+      _isLoadingAssociations = true;
       final response = await http.get(
         Uri.parse('$baseUrl/users/associations/events'),
-        headers: headers,
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        final paginatedResponse = PaginatedResponse.fromJson(
-          jsonData,
-          (json) => Event.fromJson(json),
-        );
-        return paginatedResponse.rows;
-      } else {
-        throw Exception(
-            'Échec du chargement des événements : ${response.body}');
+        final Map<String, dynamic> jsonData = jsonDecode(utf8.decode(response.bodyBytes, allowMalformed: true));
+        _associationEvents = (jsonData['rows'] as List)
+            .map((json) => Event.fromJson(json))
+            .toList();
+        return _associationEvents!;
+      } else if (response.statusCode == 401) {
+        await AuthService.logout();
       }
+      throw Exception('Échec du chargement des événements');
     } catch (e) {
       debugPrint('Error in getAssociationEvents: $e');
       rethrow;
+    } finally {
+      _isLoadingAssociations = false;
     }
   }
 
-  // Mettez à jour aussi le modèle Event pour correspondre à la réponse de l'API
-  Future<List<Event>> getParticipatingEvents() async {
+  static Future<List<Event>> getParticipatingEvents() async {
+    if (_isLoadingParticipations) return _participatingEvents ?? [];
+
     try {
+      _isLoadingParticipations = true;
       final response = await http.get(
         Uri.parse('$baseUrl/users/events'),
-        headers: headers,
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        final paginatedResponse = PaginatedResponse.fromJson(
-          jsonData,
-          (json) => Event.fromJson(json),
-        );
-        return paginatedResponse.rows;
-      } else {
-        throw Exception(
-            'Échec du chargement des événements : ${response.body}');
+        _participatingEvents = (jsonData['rows'] as List)
+            .map((json) => Event.fromJson(json))
+            .toList();
+        return _participatingEvents!;
+      } else if (response.statusCode == 401) {
+        await AuthService.logout();
       }
+      throw Exception('Échec du chargement des événements');
     } catch (e) {
       debugPrint('Error in getParticipatingEvents: $e');
       rethrow;
+    } finally {
+      _isLoadingParticipations = false;
     }
   }
 
-  Future<Event> getEventById(String id) async {
+  static Future<Event> getEventById(String id) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/events/$id'),
-        headers: headers,
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
-        return Event.fromJson(jsonDecode(response.body));
-      } else {
-        throw Exception('Événement non trouvé : ${response.body}');
+        _currentEvent = Event.fromJson(jsonDecode(response.body));
+        return _currentEvent!;
+      } else if (response.statusCode == 401) {
+        await AuthService.logout();
       }
+      throw Exception('Événement non trouvé');
     } catch (e) {
       debugPrint('Error in getEventById: $e');
       rethrow;
     }
   }
 
-  Future<bool> checkEventParticipation(String eventId) async {
+  static Future<bool> checkEventParticipation(String eventId) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/events/$eventId/is-attended'),
-        headers: headers,
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['is_attended'] ?? false;
-      } else {
-        throw Exception('Impossible de vérifier la participation');
+      } else if (response.statusCode == 401) {
+        await AuthService.logout();
       }
+      throw Exception('Impossible de vérifier la participation');
     } catch (e) {
       debugPrint('Error in checkEventParticipation: $e');
       rethrow;
     }
   }
 
-  Future<void> toggleEventParticipation(
+  static Future<void> toggleEventParticipation(
       String eventId, bool isAttending) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/events/$eventId/user-event-participation'),
-        headers: headers,
-        body: jsonEncode({
-          'is_attending': isAttending,
-        }),
+        headers: _headers,
+        body: jsonEncode({'is_attending': isAttending}),
       );
 
       if (response.statusCode == 200) {
         if (isAttending) {
-          // Si on s'inscrit, on vérifie que la participation a été créée
-          final data = jsonDecode(response.body);
-          if (data == null || data['is_attending'] != isAttending) {
-            throw Exception('Erreur lors de l\'inscription à l\'événement');
+          _shouldSwitchToParticipating = true;
+          if (_currentEvent?.id == eventId) {
+            _currentEvent = await getEventById(eventId);
           }
-        } else {
-          // Si on se désinscrit, response.body sera null ou vide, c'est normal
-          // Pas besoin de vérification supplémentaire
+          await Future.wait([
+            getAssociationEvents(),
+            getParticipatingEvents(),
+          ]);
         }
+      } else if (response.statusCode == 401) {
+        await AuthService.logout();
       } else {
         throw Exception(isAttending
             ? 'Impossible de rejoindre l\'événement'
@@ -167,11 +206,11 @@ class EventService {
     }
   }
 
-  Future<List<CategoryModel>> getCategories() async {
+  static Future<List<CategoryModel>> getCategories() async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/categories'),
-        headers: headers,
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
@@ -191,7 +230,7 @@ class EventService {
     }
   }
 
-  Future<Event> createEvent({
+  static Future<Event> createEvent({
     required String name,
     required String description,
     required DateTime date,
@@ -202,7 +241,7 @@ class EventService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/events'),
-        headers: headers,
+        headers: _headers,
         body: jsonEncode({
           'name': name,
           'description': description,
@@ -226,19 +265,18 @@ class EventService {
     }
   }
 
-  Future<Event> updateEvent({
-    required String eventId,
-    required String name,
-    required String description,
-    required DateTime date,
-    required String location,
-    required String categoryId,
-    required String associationId
-  }) async {
+  static Future<Event> updateEvent(
+      {required String eventId,
+      required String name,
+      required String description,
+      required DateTime date,
+      required String location,
+      required String categoryId,
+      required String associationId}) async {
     try {
       final response = await http.put(
         Uri.parse('$baseUrl/events/$eventId'),
-        headers: headers,
+        headers: _headers,
         body: jsonEncode({
           'name': name,
           'description': description,

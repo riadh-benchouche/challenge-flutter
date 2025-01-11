@@ -1,9 +1,10 @@
 import 'package:challenge_flutter/models/association.dart';
 import 'package:challenge_flutter/models/category_model.dart';
-import 'package:challenge_flutter/providers/association_provider.dart';
-import 'package:challenge_flutter/providers/event_provider.dart';
+import 'package:challenge_flutter/services/association_service.dart';
+import 'package:challenge_flutter/services/auth_service.dart';
+import 'package:challenge_flutter/services/category_service.dart';
+import 'package:challenge_flutter/services/event_service.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -20,7 +21,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
-  TimeOfDay _selectedTime = TimeOfDay.now();
   CategoryModel? _selectedCategory;
   Association? _selectedAssociation;
   bool _isLoading = false;
@@ -42,14 +42,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   Future<void> _loadData() async {
-    final eventProvider = Provider.of<EventProvider>(context, listen: false);
-    final associationProvider =
-        Provider.of<AssociationProvider>(context, listen: false);
-
     setState(() => _isLoading = true);
     try {
-      final categories = await eventProvider.fetchCategories();
-      final associations = await associationProvider.fetchAssociationByOwner();
+      final categories = await CategoryService.fetchCategories();
+      final associations = await AssociationService.getAssociationsByUser(
+          AuthService.userData!['id']);
 
       setState(() {
         _categories = categories;
@@ -72,15 +69,15 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
+      initialDate: _selectedDate,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-      locale: const Locale('fr', 'FR'),  // Ajouter la locale française
+      locale: const Locale('fr', 'FR'), // Ajouter la locale française
     );
 
     if (picked != null) {
       // Conserver l'heure actuelle ou utiliser l'heure actuelle si pas de date sélectionnée
-      final currentTime = _selectedDate ?? DateTime.now();
+      final currentTime = _selectedDate;
 
       final TimeOfDay? pickedTime = await showTimePicker(
         context: context,
@@ -126,15 +123,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final eventProvider = Provider.of<EventProvider>(context, listen: false);
-
-      await eventProvider.createEvent(
-        _nameController.text,
-        _descriptionController.text,
-        _selectedDate,
-        _locationController.text,
-        _selectedCategory!.id,
-        _selectedAssociation!.id,
+      await EventService.createEvent(
+        name: _nameController.text,
+        description: _descriptionController.text,
+        date: _selectedDate,
+        location: _locationController.text,
+        categoryId: _selectedCategory!.id,
+        associationId: _selectedAssociation!.id,
       );
 
       if (mounted) {
@@ -165,9 +160,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final eventProvider = Provider.of<EventProvider>(context);
-
-    if (!eventProvider.canCreateEvent) {
+    if (!EventService.canCreateEvent) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Créer un événement'),
@@ -257,11 +250,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                             labelText: 'Date et heure',
                             border: OutlineInputBorder(),
                           ),
-                          child: Text(
-                            _selectedDate != null
-                                ? DateFormat('dd/MM/yyyy HH:mm')
-                                .format(_selectedDate!)
-                                : 'Sélectionnez une date',
+                          child: Text(DateFormat('dd/MM/yyyy HH:mm')
+                              .format(_selectedDate),
                           ),
                         ),
                       ),

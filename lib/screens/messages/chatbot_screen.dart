@@ -1,8 +1,7 @@
+import 'package:challenge_flutter/services/auth_service.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../models/chatbot_message.dart';
 import '../../services/chatbot_service.dart';
-import '../../providers/user_provider.dart';
 
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
@@ -21,10 +20,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   @override
   void initState() {
     super.initState();
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
     _chatbotService = ChatbotService(
-      baseUrl: userProvider.baseUrl,
-      token: userProvider.token!,
+      baseUrl: AuthService.baseUrl,
+      token: AuthService.token!,
     );
 
     // Ajouter un message de bienvenue

@@ -1,9 +1,9 @@
+import 'package:challenge_flutter/models/category_model.dart';
+import 'package:challenge_flutter/services/category_service.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/category_provider.dart';
 
 class CategoryFormScreen extends StatefulWidget {
-  final Map<String, dynamic>? category;
+  final CategoryModel? category;
 
   const CategoryFormScreen({super.key, this.category});
 
@@ -21,8 +21,8 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
   void initState() {
     super.initState();
     if (widget.category != null) {
-      _nameController.text = widget.category!['name'] ?? '';
-      _descriptionController.text = widget.category!['description'] ?? '';
+      _nameController.text = widget.category!.name;
+      _descriptionController.text = widget.category!.description;
     }
   }
 
@@ -37,13 +37,11 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
         'description': _descriptionController.text.trim(),
       };
 
-      final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
-
       if (widget.category == null) {
-        await categoryProvider.addCategory(categoryData);
+        await CategoryService.addCategory(categoryData);
       } else {
-        await categoryProvider.updateCategory(
-          widget.category!['id'],
+        await CategoryService.updateCategory(
+          widget.category!.id,
           categoryData,
         );
       }
@@ -118,11 +116,12 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                 onPressed: _isLoading ? null : _saveForm,
                 child: _isLoading
                     ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-                    : Text(widget.category == null ? 'Ajouter' : 'Mettre à jour'),
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        widget.category == null ? 'Ajouter' : 'Mettre à jour'),
               ),
             ],
           ),

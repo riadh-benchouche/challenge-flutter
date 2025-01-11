@@ -1,16 +1,15 @@
+import 'package:challenge_flutter/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import '../../providers/user_provider.dart';
 
 class AdminLayout extends StatelessWidget {
   final Widget child;
+
   const AdminLayout({Key? key, required this.child}) : super(key: key);
 
   Future<void> _handleLogout(BuildContext context) async {
     try {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      await userProvider.logout();
+      await AuthService.logout();
       if (context.mounted) {
         context.go('/login');
       }
@@ -66,9 +65,7 @@ class AdminLayout extends StatelessWidget {
                       side: BorderSide(color: Theme.of(context).primaryColor),
                     ),
                     onPressed: () => _handleLogout(context),
-                    child: const Icon(Icons.logout,
-                      color: Colors.red),
-
+                    child: const Icon(Icons.logout, color: Colors.red),
                   ),
                 ),
               ),
@@ -83,7 +80,8 @@ class AdminLayout extends StatelessWidget {
   }
 
   int _getSelectedIndex(BuildContext context) {
-    final String location = GoRouter.of(context).routerDelegate.currentConfiguration.uri.toString();
+    final String location =
+        GoRouter.of(context).routerDelegate.currentConfiguration.uri.toString();
     if (location == '/admin') return 0;
     if (location.startsWith('/admin/users')) return 1;
     if (location.startsWith('/admin/pending-associations')) return 2;

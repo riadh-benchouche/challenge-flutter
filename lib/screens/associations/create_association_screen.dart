@@ -1,14 +1,12 @@
-import 'package:challenge_flutter/providers/association_provider.dart';
+import 'package:challenge_flutter/services/association_service.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
 class CreateAssociationScreen extends StatefulWidget {
   const CreateAssociationScreen({super.key});
 
   @override
-  State<CreateAssociationScreen> createState() =>
-      _CreateAssociationScreenState();
+  State<CreateAssociationScreen> createState() => _CreateAssociationScreenState();
 }
 
 class _CreateAssociationScreenState extends State<CreateAssociationScreen> {
@@ -50,30 +48,23 @@ class _CreateAssociationScreenState extends State<CreateAssociationScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final provider = Provider.of<AssociationProvider>(context, listen: false);
-
-      if (!provider.canCreateAssociation) {
-        throw Exception(
-            'Vous n\'avez pas les droits pour créer une association');
+      if (!AssociationService.canCreateAssociation) {
+        throw Exception('Vous n\'avez pas les droits pour créer une association');
       }
 
-      await provider.createAssociation(
+      await AssociationService.createAssociation(
         _nameController.text.trim(),
         _descriptionController.text.trim(),
       );
 
       if (mounted) {
-        // Récupérer les nouvelles données avant de retourner
-        await provider.fetchAssociations();
-        await provider.fetchAssociationByUser();
-
+        // Les données sont déjà rafraîchies dans le service
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Association créée avec succès !'),
             backgroundColor: Colors.green,
           ),
         );
-
         context.pop();
       }
     } catch (e) {
@@ -95,9 +86,9 @@ class _CreateAssociationScreenState extends State<CreateAssociationScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final associationProvider = Provider.of<AssociationProvider>(context);
+    final canCreate = AssociationService.canCreateAssociation;
 
-    if (!associationProvider.canCreateAssociation) {
+    if (!canCreate) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Créer une association'),
@@ -156,9 +147,9 @@ class _CreateAssociationScreenState extends State<CreateAssociationScreen> {
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : ElevatedButton(
-                        onPressed: _handleSubmit,
-                        child: const Text('Créer l\'association'),
-                      ),
+                  onPressed: _handleSubmit,
+                  child: const Text('Créer l\'association'),
+                ),
               ),
             ],
           ),

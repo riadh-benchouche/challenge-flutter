@@ -1,85 +1,106 @@
-// lib/services/home_service.dart
 import 'dart:convert';
-import 'package:flutter/cupertino.dart';
+import 'package:challenge_flutter/models/association.dart';
+import 'package:challenge_flutter/models/event.dart';
+import 'package:challenge_flutter/models/statistics.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import '../models/statistics.dart';
-import '../models/association.dart';
-import '../models/event.dart';
+import 'auth_service.dart';
 
 class HomeService {
-  final String baseUrl;
-  final String? token;
+  static final String baseUrl = AuthService.baseUrl;
 
-  HomeService({required this.baseUrl, this.token});
+  static Map<String, String> get _headers => {
+    'Content-Type': 'application/json',
+    if (AuthService.token != null) 'Authorization': 'Bearer ${AuthService.token}',
+  };
 
-  Map<String, String> get headers => {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
+  static Statistics? _statistics;
+  static List<Association>? _topAssociations;
+  static List<Event>? _recentEvents;
 
-  Future<Statistics> getStatistics() async {
+  // Getters
+  static Statistics? get statistics => _statistics;
+  static List<Association>? get topAssociations => _topAssociations;
+  static List<Event>? get recentEvents => _recentEvents;
+
+  static Future<Statistics?> getStatistics() async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/statistics'),
-        headers: headers,
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
-        return Statistics.fromJson(jsonDecode(response.body));
-      } else {
-        throw Exception('Échec du chargement des statistiques');
+        _statistics = Statistics.fromJson(jsonDecode(response.body));
+        return _statistics;
+      } else if (response.statusCode == 401) {
+        await AuthService.logout();
       }
+      return null;
     } catch (e) {
-      throw Exception('Erreur: ${e.toString()}');
+      debugPrint('Erreur getStatistics: ${e.toString()}');
+      return null;
     }
   }
 
-  Future<List<Association>> getTopAssociations() async {
+  static Future<List<Association>?> getTopAssociations() async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/top-associations'),
-        headers: headers,
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonData = jsonDecode(response.body);
-        return jsonData
-            .take(3) // Prendre seulement les 3 premières associations
+        _topAssociations = jsonData
+            .take(3)
             .map((json) => Association.fromJson(json))
             .toList();
-      } else {
-        throw Exception('Échec du chargement des associations');
+        return _topAssociations;
+      } else if (response.statusCode == 401) {
+        await AuthService.logout();
       }
+      return null;
     } catch (e) {
-      throw Exception('Erreur: ${e.toString()}');
+      debugPrint('Erreur getTopAssociations: ${e.toString()}');
+      return null;
     }
   }
 
-  Future<List<Event>> getRecentEvents() async {
+  static Future<List<Event>?> getRecentEvents() async {
     try {
-      debugPrint(
-          'Appel API getRecentEvents avec token: ${token?.substring(0, 10)}...');
       final response = await http.get(
         Uri.parse('$baseUrl/users/events'),
-        headers: headers,
+        headers: _headers,
       );
-
-      debugPrint('Status code: ${response.statusCode}');
-      debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        final List<Event> events = (jsonData['rows'] as List)
+        _recentEvents = (jsonData['rows'] as List)
             .map((json) => Event.fromJson(json))
+            .toList()
+            .take(3)
             .toList();
-        return events.take(3).toList();
-      } else {
-        throw Exception(
-            'Échec du chargement des événements (${response.statusCode}): ${response.body}');
+        return _recentEvents;
+      } else if (response.statusCode == 401) {
+        await AuthService.logout();
       }
+      return null;
     } catch (e) {
-      debugPrint('Erreur dans getRecentEvents: $e');
-      rethrow;
+      debugPrint('Erreur getRecentEvents: ${e.toString()}');
+      return null;
+    }
+  }
+
+  static Future<void> refreshAll() async {
+    try {
+      await Future.wait([
+        getStatistics(),
+        getTopAssociations(),
+        getRecentEvents(),
+      ]);
+    } catch (e) {
+      debugPrint('Erreur refreshAll: ${e.toString()}');
     }
   }
 }

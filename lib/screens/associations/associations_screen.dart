@@ -1,8 +1,8 @@
 import 'package:challenge_flutter/models/association.dart';
+import 'package:challenge_flutter/services/association_service.dart';
+import 'package:challenge_flutter/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'package:challenge_flutter/providers/association_provider.dart';
 import 'package:challenge_flutter/widgets/home/association_card_widget.dart';
 
 class AssociationsScreen extends StatefulWidget {
@@ -16,8 +16,10 @@ class _AssociationsScreenState extends State<AssociationsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _searchQuery = '';
-  Future<List<Association>>? _myAssociationsFuture;
-  Future<List<Association>>? _allAssociationsFuture;
+  List<Association>? _myAssociations;
+  List<Association>? _allAssociations;
+  bool _isLoading = false;
+  String? _error;
 
   @override
   void initState() {
@@ -27,7 +29,6 @@ class _AssociationsScreenState extends State<AssociationsScreen>
 
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
-        // Recharger les données quand on change d'onglet
         _loadAssociations();
       }
     });
@@ -40,15 +41,64 @@ class _AssociationsScreenState extends State<AssociationsScreen>
   }
 
   Future<void> _loadAssociations() async {
-    final associationProvider = Provider.of<AssociationProvider>(context, listen: false);
-    _myAssociationsFuture = associationProvider.fetchAssociationByUser();
-    _allAssociationsFuture = associationProvider.fetchAssociations();
-    if (mounted) setState(() {});
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final userId = AuthService.userData?['id'];
+      if (userId == null) {
+        context.go('/login');
+        throw Exception('Utilisateur non connecté');
+      }
+
+      // Utilisation de try-catch pour chaque appel de service
+      List<Association>? userAssociations;
+      List<Association>? allAssociations;
+
+      try {
+        userAssociations =
+            await AssociationService.getAssociationsByUser(userId);
+      } catch (e) {
+        debugPrint(
+            'Erreur lors du chargement des associations de l\'utilisateur: $e');
+        userAssociations = [];
+      }
+
+      try {
+        allAssociations = await AssociationService.getAssociations();
+      } catch (e) {
+        debugPrint('Erreur lors du chargement de toutes les associations: $e');
+        allAssociations = [];
+      }
+
+      if (mounted) {
+        setState(() {
+          _myAssociations = userAssociations ?? [];
+          _allAssociations = allAssociations ?? [];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+          _myAssociations = [];
+          _allAssociations = [];
+        });
+      }
+    }
   }
 
   List<Association> _filterAssociations(
-      List<Association> associations, String query) {
+      List<Association>? associations, String query) {
+    if (associations == null) return [];
     if (query.isEmpty) return associations;
+
     return associations.where((association) {
       return association.name.toLowerCase().contains(query.toLowerCase()) ||
           association.description.toLowerCase().contains(query.toLowerCase());
@@ -60,11 +110,7 @@ class _AssociationsScreenState extends State<AssociationsScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.group_off,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.group_off, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'Aucune association trouvée',
@@ -77,31 +123,28 @@ class _AssociationsScreenState extends State<AssociationsScreen>
           const SizedBox(height: 8),
           Text(
             'Essayez de modifier vos critères de recherche',
-            style: TextStyle(
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(color: Colors.grey[500]),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildErrorState(Object error, VoidCallback onRetry) {
+  Widget _buildErrorState(String error) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.error_outline, size: 64, color: Colors.red),
           const SizedBox(height: 16),
-          Text('Erreur: ${error.toString()}',
+          Text(
+            'Erreur: $error',
             textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.red, fontSize: 16),
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
-            onPressed: () {
-              _loadAssociations(); // Appel direct sans setState
-            },
+            onPressed: _loadAssociations,
             icon: const Icon(Icons.refresh),
             label: const Text('Réessayer'),
           ),
@@ -119,80 +162,60 @@ class _AssociationsScreenState extends State<AssociationsScreen>
           SizedBox(height: 16),
           Text(
             'Chargement des associations...',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 16,
-            ),
+            style: TextStyle(color: Colors.grey, fontSize: 16),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAssociationsList(Future<List<Association>>? future) {
-    if (future == null) {
+  Widget _buildAssociationsList(List<Association>? associations) {
+    if (_isLoading) {
+      return _buildLoadingState();
+    }
+
+    if (_error != null) {
+      return _buildErrorState(_error!);
+    }
+
+    final filteredAssociations =
+        _filterAssociations(associations, _searchQuery);
+
+    if (filteredAssociations.isEmpty) {
       return _buildEmptyState();
     }
 
-    return FutureBuilder<List<Association>>(
-      future: future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildLoadingState();
-        }
-
-        if (snapshot.hasError) {
-          return _buildErrorState(
-            snapshot.error!,
-            () => setState(() => _loadAssociations()),
+    return RefreshIndicator(
+      onRefresh: _loadAssociations,
+      child: GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.7,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        itemCount: filteredAssociations.length,
+        itemBuilder: (context, index) {
+          final association = filteredAssociations[index];
+          return AssociationCard(
+            associationId: association.id,
+            associationName: association.name,
+            imageSrc: association.imageUrl,
+            userCount: 12,
+            eventCount: 13,
+            description: association.description,
+            isActive: association.isActive,
           );
-        }
-
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return _buildEmptyState();
-        }
-
-        final filteredAssociations =
-            _filterAssociations(snapshot.data!, _searchQuery);
-
-        if (filteredAssociations.isEmpty) {
-          return _buildEmptyState();
-        }
-
-        return RefreshIndicator(
-          onRefresh: _loadAssociations,
-          child: GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2, // Affiche 2 cartes par ligne
-              childAspectRatio: 0.7, // Ajustez ce ratio selon vos besoins
-              crossAxisSpacing: 16, // Espacement horizontal entre les cartes
-              mainAxisSpacing: 16, // Espacement vertical entre les cartes
-            ),
-            itemCount: filteredAssociations.length,
-            itemBuilder: (context, index) {
-              final association = filteredAssociations[index];
-              return AssociationCard(
-                associationId: association.id,
-                associationName: association.name,
-                imageSrc: association.imageUrl,
-                userCount: 12,
-                eventCount: 13,
-                description: association.description,
-                isActive: association.isActive,
-              );
-            },
-          ),
-        );
-      },
+        },
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final associationProvider =
-        Provider.of<AssociationProvider>(context); // Ajout de cette ligne
+    final canCreate = AssociationService.canCreateAssociation;
 
     return Scaffold(
       body: Column(
@@ -249,14 +272,14 @@ class _AssociationsScreenState extends State<AssociationsScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildAssociationsList(_allAssociationsFuture),
-                _buildAssociationsList(_myAssociationsFuture),
+                _buildAssociationsList(_allAssociations),
+                _buildAssociationsList(_myAssociations),
               ],
             ),
           ),
         ],
       ),
-      floatingActionButton: associationProvider.canCreateAssociation
+      floatingActionButton: canCreate
           ? FloatingActionButton.extended(
               heroTag: 'createAssociationFAB',
               onPressed: () => context.go('/associations/create-association'),

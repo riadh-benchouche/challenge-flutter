@@ -1,8 +1,6 @@
+import 'package:challenge_flutter/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'package:challenge_flutter/providers/user_provider.dart';
-import 'package:challenge_flutter/providers/home_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.controller});
@@ -57,34 +55,17 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // Récupérer les providers nécessaires
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final homeProvider = Provider.of<HomeProvider>(context, listen: false);
-
-      // Connecter l'utilisateur
-      await userProvider.login(
+      await AuthService.login(
         _emailController.text.trim(),
         _passController.text.trim(),
       );
 
-      if (mounted && userProvider.isLoggedIn) {
-        // Précharger les données de la home page
-        try {
-          await homeProvider.refreshAll();
-        } catch (e) {
-          debugPrint('Erreur lors du chargement des données initiales: $e');
-          // On continue quand même la navigation même si le chargement des données échoue
-        }
-
-        // Rediriger vers la home page
-        if (mounted) {
-          context.go('/');
-        }
+      if (mounted && AuthService.isLoggedIn) {
+        context.go('/');
       }
     } catch (error) {
       if (mounted) {
         String errorMessage = error.toString();
-        // Nettoyer le message d'erreur si nécessaire
         if (errorMessage.contains('Exception:')) {
           errorMessage = errorMessage.replaceAll('Exception:', '').trim();
         }

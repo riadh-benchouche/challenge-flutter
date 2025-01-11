@@ -1,9 +1,7 @@
-import 'package:challenge_flutter/providers/user_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:challenge_flutter/services/auth_service.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:convert';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -16,19 +14,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<UserProvider>(context, listen: false).refreshUserData();
-    });
+    AuthService.refreshUserData();
   }
 
   Future<void> _handleLogout() async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    await userProvider.logout();
+    await AuthService.logout();
     if (mounted) context.go('/');
   }
 
   Widget _buildProfileImage(String? imageUrl, String? name) {
-    final String baseUrl = Provider.of<UserProvider>(context, listen: false).baseUrl;
+    final String baseUrl = AuthService.baseUrl;
     return Container(
       width: 120,
       height: 120,
@@ -47,11 +42,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: ClipOval(
         child: imageUrl != null && imageUrl.isNotEmpty
             ? CachedNetworkImage(
-          imageUrl: '$baseUrl/$imageUrl',
-          fit: BoxFit.cover,
-          placeholder: (context, url) => const CircularProgressIndicator(),
-          errorWidget: (context, url, error) => _buildInitials(name),
-        )
+                imageUrl: '$baseUrl/$imageUrl',
+                fit: BoxFit.cover,
+                placeholder: (context, url) =>
+                    const CircularProgressIndicator(),
+                errorWidget: (context, url, error) => _buildInitials(name),
+              )
             : _buildInitials(name),
       ),
     );
@@ -94,91 +90,90 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<UserProvider>(
-      builder: (context, userProvider, _) {
-        final userData = userProvider.userData;
+    final userData = AuthService.userData;
 
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Profile', style: TextStyle(color: Colors.white)),
-            backgroundColor: Theme.of(context).primaryColor,
-            elevation: 0,
-          ),
-          body: RefreshIndicator(
-            onRefresh: userProvider.refreshUserData,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Center(child: _buildProfileImage(userData?['image_url'], userData?['name'])),
-                const SizedBox(height: 20),
-                Center(
-                  child: Text(
-                    userData?['name'] ?? 'Utilisateur',
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Center(
-                  child: Text(
-                    userData?['email'] ?? '',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 30),
-                Card(
-                  elevation: 2,
-                  child: Column(
-                    children: [
-                      _buildInfoTile(
-                        icon: Icons.person,
-                        title: 'Role',
-                        value: (userData?['role'] ?? '').toString().toUpperCase(),
-                        iconColor: Colors.green,
-                      ),
-                      const Divider(height: 1),
-                      _buildInfoTile(
-                        icon: Icons.calendar_today,
-                        title: 'Membre depuis',
-                        value: _formatDate(userData?['created_at']),
-                        iconColor: Colors.orange,
-                      ),
-                      const Divider(height: 1),
-                      _buildInfoTile(
-                        icon: Icons.verified_user,
-                        title: 'Statut',
-                        value: userData?['is_active'] == true ? 'Actif' : 'Inactif',
-                        iconColor: Colors.blue,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 30),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.all(16),
-                    backgroundColor: Theme.of(context).primaryColor,
-                  ),
-                  onPressed: () => context.go('/edit-profile'),
-                  icon: const Icon(Icons.edit),
-                  label: const Text('Modifier le profil'),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.all(16),
-                    side: BorderSide(color: Theme.of(context).primaryColor),
-                  ),
-                  onPressed: _handleLogout,
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Déconnexion'),
-                ),
-              ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profile', style: TextStyle(color: Colors.white)),
+        backgroundColor: Theme.of(context).primaryColor,
+        elevation: 0,
+      ),
+      body: RefreshIndicator(
+        onRefresh: AuthService.refreshUserData,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Center(
+                child: _buildProfileImage(
+                    userData?['image_url'], userData?['name'])),
+            const SizedBox(height: 20),
+            Center(
+              child: Text(
+                userData?['name'] ?? 'Utilisateur',
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
-        );
-      },
+            Center(
+              child: Text(
+                userData?['email'] ?? '',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+            Card(
+              elevation: 2,
+              child: Column(
+                children: [
+                  _buildInfoTile(
+                    icon: Icons.person,
+                    title: 'Role',
+                    value: (userData?['role'] ?? '').toString().toUpperCase(),
+                    iconColor: Colors.green,
+                  ),
+                  const Divider(height: 1),
+                  _buildInfoTile(
+                    icon: Icons.calendar_today,
+                    title: 'Membre depuis',
+                    value: _formatDate(userData?['created_at']),
+                    iconColor: Colors.orange,
+                  ),
+                  const Divider(height: 1),
+                  _buildInfoTile(
+                    icon: Icons.verified_user,
+                    title: 'Statut',
+                    value: userData?['is_active'] == true ? 'Actif' : 'Inactif',
+                    iconColor: Colors.blue,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.all(16),
+                backgroundColor: Theme.of(context).primaryColor,
+              ),
+              onPressed: () => context.go('/edit-profile'),
+              icon: const Icon(Icons.edit),
+              label: const Text('Modifier le profil'),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.all(16),
+                side: BorderSide(color: Theme.of(context).primaryColor),
+              ),
+              onPressed: _handleLogout,
+              icon: const Icon(Icons.logout),
+              label: const Text('Déconnexion'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

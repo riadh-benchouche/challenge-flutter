@@ -1,16 +1,15 @@
-import 'package:challenge_flutter/providers/association_provider.dart';
-import 'package:challenge_flutter/providers/event_provider.dart';
-import 'package:challenge_flutter/providers/home_provider.dart';
-import 'package:challenge_flutter/providers/message_provider.dart';
 import 'package:challenge_flutter/screens/associations/associations_screen.dart';
 import 'package:challenge_flutter/screens/events/events_screen.dart';
 import 'package:challenge_flutter/screens/home/home_screen.dart';
 import 'package:challenge_flutter/screens/messages/messages_screen.dart';
+import 'package:challenge_flutter/services/association_service.dart';
+import 'package:challenge_flutter/services/auth_service.dart';
+import 'package:challenge_flutter/services/event_service.dart';
+import 'package:challenge_flutter/services/home_service.dart';
+import 'package:challenge_flutter/services/message_service.dart';
 import 'package:challenge_flutter/widgets/global/custom_app_bar.dart';
 import 'package:challenge_flutter/widgets/global/custom_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:challenge_flutter/providers/user_provider.dart';
 
 class MainLayout extends StatefulWidget {
   final int initialIndex;
@@ -28,34 +27,47 @@ class _MainLayoutState extends State<MainLayout> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
-    _loadDataForCurrentTab();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadDataForCurrentTab(_currentIndex);
+    });
   }
 
-  void _loadDataForCurrentTab() {
+  Future<void> _loadDataForCurrentTab(int index) async {
     if (!mounted) return;
 
-    switch (_currentIndex) {
-      case 0: // Home
-        final homeProvider = Provider.of<HomeProvider>(context, listen: false);
-        homeProvider.refreshAll();
-        break;
-      case 1: // Events
-        final eventProvider =
-            Provider.of<EventProvider>(context, listen: false);
-        eventProvider.fetchAssociationEvents();
-        eventProvider.fetchParticipatingEvents();
-        break;
-      case 2: // Associations
-        final associationProvider =
-            Provider.of<AssociationProvider>(context, listen: false);
-        associationProvider.fetchAssociationByUser();
-        associationProvider.fetchAssociations();
-        break;
-      case 3: // Messages
-        final messageProvider =
-            Provider.of<MessageProvider>(context, listen: false);
-        messageProvider.loadUserAssociations();
-        break;
+    try {
+      switch (index) {
+        case 0: // Home
+          await HomeService.refreshAll();
+          break;
+        case 1: // Events
+          await Future.wait([
+            EventService.getAssociationEvents(),
+            EventService.getParticipatingEvents(),
+          ]);
+          break;
+        case 2: // Associations
+          final userId = AuthService.userData?['id'];
+          if (userId != null) {
+            await Future.wait([
+              AssociationService.getAssociationsByUser(userId),
+              AssociationService.getAssociations(),
+            ]);
+          }
+          break;
+        case 3: // Messages
+          await MessageService.loadUserAssociations();
+          break;
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur de chargement: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -83,9 +95,7 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
-    final userData = userProvider.userData;
-    final userName = userData?['name'] ?? 'Utilisateur';
+    final userName = AuthService.userData?['name'] ?? 'Utilisateur';
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -102,7 +112,7 @@ class _MainLayoutState extends State<MainLayout> {
           setState(() {
             _currentIndex = index;
           });
-          _loadDataForCurrentTab();
+          _loadDataForCurrentTab(index);
         },
       ),
     );

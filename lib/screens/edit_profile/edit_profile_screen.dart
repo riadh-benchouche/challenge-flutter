@@ -1,8 +1,7 @@
 import 'dart:io';
+import 'package:challenge_flutter/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
-import '../../providers/user_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -26,8 +25,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           source: ImageSource.gallery,
           maxWidth: 1800,
           maxHeight: 1800,
-          imageQuality: 85
-      );
+          imageQuality: 85);
 
       if (pickedFile != null) {
         final File imageFile = File(pickedFile.path);
@@ -40,72 +38,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  Future<void> _updateProfile() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    _formKey.currentState!.save();
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final currentUserId = userProvider.userData?['id'];
-    final token = userProvider.token;
-
-    if (currentUserId == null || token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erreur : utilisateur non authentifié.')),
-      );
-      return;
-    }
-
-    try {
-      // Mettre à jour le profil
-      final response = await http.put(
-        Uri.parse('${userProvider.baseUrl}/users/$currentUserId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'name': _name,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        final updatedUserData = {
-          ...(userProvider.userData ?? {}),
-          ...(responseData as Map<String, dynamic>)
-        };
-        userProvider.updateUserData(updatedUserData);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profil mis à jour avec succès !')),
-        );
-
-        // Si une image est sélectionnée, l'uploader
-        if (_image != null) {
-          final bool success = await _uploadImage(currentUserId, token);
-          if (success) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Image mise à jour avec succès !')),
-            );
-          }
-        }
-
-        if (mounted) Navigator.of(context).pop();
-      } else {
-        throw Exception('Échec de la mise à jour du profil');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur : ${e.toString()}')),
-      );
-    }
-  }
-
   Future<bool> _uploadImage(String userId, String token) async {
     try {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
       final url =
-          Uri.parse('${userProvider.baseUrl}/users/$userId/upload-image');
+          Uri.parse('${AuthService.baseUrl}/users/$userId/upload-image');
       final request = http.MultipartRequest('POST', url);
 
       if (kIsWeb) {
@@ -129,10 +65,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         final updatedUserData = {
-          ...(userProvider.userData ?? {}),
+          ...(AuthService.userData ?? {}),
           ...(responseData as Map<String, dynamic>)
         };
-        userProvider.updateUserData(updatedUserData);
+        // Mise à jour avec les nouveaux paramètres
+        await AuthService.updateUserData(updatedUserData);
         return true;
       }
       return false;
@@ -142,10 +79,56 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  Future<void> _updateProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    _formKey.currentState!.save();
+    final currentUserId = AuthService.userData?['id'];
+    final token = AuthService.token;
+
+    if (currentUserId == null || token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erreur : utilisateur non authentifié.')),
+      );
+      return;
+    }
+
+    try {
+      // Mettre à jour le profil avec la nouvelle méthode updateUser
+      await AuthService.updateUser(
+        currentUserId,
+        _name!,
+        AuthService.userData?['email'] ?? '',
+        AuthService.userData?['role'] ?? 'user',
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profil mis à jour avec succès !')),
+      );
+
+      // Si une image est sélectionnée, l'uploader
+      if (_image != null) {
+        final bool success = await _uploadImage(currentUserId, token);
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Image mise à jour avec succès !')),
+          );
+        }
+      }
+
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur : ${e.toString()}')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
-    final currentUser = userProvider.userData;
+    final currentUser = AuthService.userData;
 
     return Scaffold(
       appBar: AppBar(
@@ -169,7 +152,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 CircleAvatar(
                   radius: 60,
                   backgroundImage: NetworkImage(
-                    '${userProvider.baseUrl}/${currentUser!['image_url']}',
+                    '${AuthService.baseUrl}/${currentUser!['image_url']}',
                   ),
                 )
               else
