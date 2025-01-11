@@ -1,175 +1,156 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
-import '../services/auth_service.dart';
-import '../services/websocket_service.dart';
 import '../models/message.dart';
 import '../models/association.dart';
-import '../models/user.dart';
+import 'auth_service.dart';
+import 'websocket_service.dart';
 
 class MessageService {
-  static WebSocketService? _webSocketService;
+  static WebSocketService? _webSocket;
+  static List<Association> userAssociations = [];
+  static Association? currentAssociation;
   static final Map<String, List<Message>> _messages = {};
-  static Association? _currentAssociation;
-  static List<Association> _userAssociations = [];
-  static bool _initialized = false;
+  static Function(Message)? onNewMessage;
+  static String? lastError;
+  static bool isWebSocketConnected = false;
+  static Function(String)? onError;
+  static Function(bool)? onConnectionStatusChanged;
 
-  // Getters
-  static List<Association> get userAssociations => _userAssociations;
+  // Méthode pour initialiser/récupérer la connexion WebSocket
+  static Future<WebSocketService> _getWebSocket() async {
+    if (_webSocket == null) {
+      final token = AuthService.token;
+      if (token == null) throw Exception('No token available');
 
-  static Association? get currentAssociation => _currentAssociation;
+      _webSocket = WebSocketService(token: token)
+        ..onMessageReceived = _handleNewMessage
+        ..onConnectionClosed = _handleConnectionClosed
+        ..onError = _handleError;
 
-  static bool get initialized => _initialized;
-
-  static Future<void> initWebSocket() async {
-    if (_initialized) return;
-
-    final token = AuthService.token;
-    if (token == null || token.isEmpty) {
-      return;
+      await _webSocket!.connect();
     }
-
-    _webSocketService = WebSocketService(token: token);
-    _webSocketService!.onMessageReceived = _handleNewMessage;
-    _webSocketService!.onError = (error) {
-      debugPrint('WebSocket error in service: $error');
-    };
-    _webSocketService!.onConnectionClosed = () {
-      debugPrint('WebSocket connection closed in service');
-    };
-
-    await Future.delayed(const Duration(milliseconds: 500));
-    await _webSocketService!.connect();
-    _initialized = true;
+    return _webSocket!;
   }
 
-  static void dispose() {
-    _webSocketService?.dispose();
-    _webSocketService = null;
-    _initialized = false;
+  static void _handleNewMessage(Message message) {
+    final messages = _messages[message.associationId] ?? [];
+    if (!messages.any((m) => m.id == message.id)) {
+      messages.add(message);
+      _messages[message.associationId] = messages;
+      onNewMessage?.call(message);
+    }
+  }
+
+  static void _handleConnectionClosed() {
+    isWebSocketConnected = false;
+    onConnectionStatusChanged?.call(false);
+    lastError =
+        'La connexion au serveur a été perdue. Tentative de reconnexion...';
+    onError?.call(lastError!);
+    debugPrint('WebSocket: $lastError');
+  }
+
+  static void _handleError(dynamic error) {
+    String errorMessage;
+
+    if (error.toString().contains('token')) {
+      errorMessage = 'Erreur d\'authentification. Veuillez vous reconnecter.';
+    } else if (error.toString().contains('connection refused')) {
+      errorMessage =
+          'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+    } else if (error.toString().contains('timeout')) {
+      errorMessage =
+          'Le serveur met trop de temps à répondre. Réessayez plus tard.';
+    } else {
+      errorMessage = 'Une erreur est survenue: ${error.toString()}';
+    }
+
+    lastError = errorMessage;
+    onError?.call(errorMessage);
+    debugPrint('WebSocket Error: $errorMessage');
   }
 
   static Future<void> loadUserAssociations() async {
     try {
+      final token = AuthService.token;
+      if (token == null) throw Exception('No token available');
+
       final response = await http.get(
         Uri.parse(
             '${AuthService.baseUrl}/users/${AuthService.userData!['id']}/associations'),
         headers: {
-          'Authorization': 'Bearer ${AuthService.token}',
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
         },
       );
 
-      // Gérer le cas où il n'y a pas d'associations (204 ou body vide)
-      if (response.statusCode == 204 || response.body.isEmpty) {
-        _userAssociations = [];
-        return;
-      }
-
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        _userAssociations =
+        final List<dynamic> data = json.decode(response.body);
+        userAssociations =
             data.map((json) => Association.fromJson(json)).toList();
-
-        // Charger les messages uniquement s'il y a des associations
-        if (_userAssociations.isNotEmpty) {
-          for (var association in _userAssociations) {
-            await loadMessages(association.id);
-          }
-        }
-      } else if (response.statusCode == 401) {
-        await AuthService.logout();
+      } else {
+        throw Exception('Failed to load associations');
       }
-    } catch (error) {
-      debugPrint('Error loading associations: $error');
-      // Au lieu de rethrow, on définit une liste vide
-      _userAssociations = [];
+    } catch (e) {
+      throw Exception('Error loading associations: $e');
     }
   }
 
   static Future<void> loadMessages(String associationId) async {
     try {
-      final associationResponse = await http.get(
-        Uri.parse('${AuthService.baseUrl}/associations/$associationId'),
-        headers: {
-          'Authorization': 'Bearer ${AuthService.token}',
-        },
-      );
+      final token = AuthService.token;
+      if (token == null) throw Exception('No token available');
 
-      if (associationResponse.statusCode == 200) {
-        _currentAssociation =
-            Association.fromJson(jsonDecode(associationResponse.body));
-      }
+      // Initialise la connexion WebSocket en même temps que le chargement des messages
+      await _getWebSocket();
 
       final response = await http.get(
         Uri.parse('${AuthService.baseUrl}/messages/association/$associationId'),
         headers: {
-          'Authorization': 'Bearer ${AuthService.token}',
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
         },
       );
 
-      // Gérer le cas où il n'y a pas de messages
-      if (response.statusCode == 204 || response.body.isEmpty) {
-        _messages[associationId] = [];
-        return;
-      }
-
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
+        final List<dynamic> data = json.decode(response.body);
         _messages[associationId] =
             data.map((json) => Message.fromJson(json)).toList();
-      } else if (response.statusCode == 401) {
-        await AuthService.logout();
+        currentAssociation = userAssociations.firstWhere(
+          (a) => a.id == associationId,
+          orElse: () => throw Exception('Association not found'),
+        );
+      } else {
+        throw Exception('Failed to load messages');
       }
-    } catch (error) {
-      debugPrint('Error loading messages: $error');
-      // Au lieu de rethrow, on définit une liste vide pour les messages
-      _messages[associationId] = [];
-    }
-  }
-
-  static void _handleNewMessage(Message message) {
-    final associationId = message.associationId;
-    if (!_messages.containsKey(associationId)) {
-      _messages[associationId] = [];
-    }
-    if (!_messages[associationId]!.any((m) =>
-        m.content == message.content &&
-        m.createdAt.difference(message.createdAt).inSeconds.abs() < 2)) {
-      _messages[associationId]!.add(message);
+    } catch (e) {
+      throw Exception('Error loading messages: $e');
     }
   }
 
   static Future<void> sendMessage(String content, String associationId) async {
-    if (AuthService.token == null || AuthService.token!.isEmpty) {
-      throw Exception('No token available');
-    }
-
-    final message = Message(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      content: content,
-      senderId: AuthService.userData!['id'],
-      associationId: associationId,
-      createdAt: DateTime.now(),
-      sender: User.fromJson(AuthService.userData!),
-      association: _currentAssociation ?? Association.fromJson({}),
-    );
-
     try {
-      await _webSocketService?.sendMessage(message);
+      // S'assure que le WebSocket est connecté avant d'envoyer
+      final ws = await _getWebSocket();
+      await ws.sendMessage(content, associationId);
     } catch (e) {
-      debugPrint('Error sending message: $e');
-      await initWebSocket();
-      throw Exception('Cannot send message: $e');
+      throw Exception('Failed to send message: $e');
     }
-  }
-
-  static Message? getLastMessage(String associationId) {
-    final messages = _messages[associationId];
-    if (messages == null || messages.isEmpty) return null;
-    return messages.last;
   }
 
   static List<Message> getMessagesForAssociation(String associationId) {
     return _messages[associationId] ?? [];
+  }
+
+  static Message? getLastMessage(String associationId) {
+    final messages = _messages[associationId] ?? [];
+    return messages.isEmpty ? null : messages.last;
+  }
+
+  static void dispose() {
+    _webSocket?.dispose();
+    _webSocket = null;
+    _messages.clear();
   }
 }

@@ -29,6 +29,7 @@ class _MessagesScreenState extends State<MessagesScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    MessageService.dispose();
     super.dispose();
   }
 
