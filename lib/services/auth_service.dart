@@ -8,7 +8,7 @@ class AuthService {
   static const String USER_DATA_KEY = 'user_data';
   static const String IS_LOGGED_IN_KEY = 'is_logged_in';
 
-  static String baseUrl = 'http://10.0.2.2:3000'; // Android emulator
+  static String baseUrl = 'http://localhost:3000'; // Android emulator
 
   static String? _token;
   static Map<String, dynamic>? _userData;
