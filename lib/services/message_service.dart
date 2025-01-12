@@ -1,8 +1,8 @@
 import 'dart:convert';
+import 'package:challenge_flutter/models/association.dart';
+import 'package:challenge_flutter/models/message.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
-import '../models/message.dart';
-import '../models/association.dart';
 import 'auth_service.dart';
 import 'websocket_service.dart';
 

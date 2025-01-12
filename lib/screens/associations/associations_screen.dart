@@ -206,6 +206,7 @@ class _AssociationsScreenState extends State<AssociationsScreen>
             eventCount: 13,
             description: association.description,
             isActive: association.isActive,
+            isOwner: association.ownerId == AuthService.userData?['id'],
           );
         },
       ),

@@ -9,6 +9,7 @@ class AssociationCard extends StatelessWidget {
   final int eventCount;
   final String description;
   final bool isActive;
+  final bool isOwner;
 
   const AssociationCard({
     super.key,
@@ -19,6 +20,7 @@ class AssociationCard extends StatelessWidget {
     required this.eventCount,
     required this.description,
     required this.isActive,
+    required this.isOwner,
   });
 
   @override
@@ -55,9 +57,10 @@ class AssociationCard extends StatelessWidget {
                 // Badge de statut
                 Positioned(
                   top: 8,
-                  right: 8,
+                  right: 6,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: isActive ? Colors.green : Colors.red,
                       borderRadius: BorderRadius.circular(12),
@@ -72,6 +75,28 @@ class AssociationCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                isOwner
+                    ? Positioned(
+                        top: 38,
+                        right: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.blue,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'Propriétaire',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
               ],
             ),
             // Contenu
@@ -105,27 +130,6 @@ class AssociationCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildStat(BuildContext context, IconData icon, String value) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color: Theme.of(context).primaryColor,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: Theme.of(context).primaryColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-        ),
-      ],
     );
   }
 }
