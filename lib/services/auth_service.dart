@@ -5,15 +5,20 @@ import 'package:flutter/material.dart';
 
 class AuthService {
   static const String TOKEN_KEY = 'auth_token';
+  static const String REFRESH_TOKEN_KEY = 'refresh_token';
   static const String USER_DATA_KEY = 'user_data';
   static const String IS_LOGGED_IN_KEY = 'is_logged_in';
+  static const String TOKEN_EXPIRY_KEY = 'token_expiry';
 
   static String baseUrl = 'http://localhost:3000'; // Android emulator
 
   static String? _token;
+  static String? _refreshToken;
+  static DateTime? _tokenExpiry;
   static Map<String, dynamic>? _userData;
   static bool _isLoggedIn = false;
   static bool _initialized = false;
+  static List<Map<String, dynamic>> _users = [];
 
   static String? get token => _token;
 
@@ -25,15 +30,6 @@ class AuthService {
 
   static bool get isAdmin => _userData != null && _userData!['role'] == 'admin';
 
-  static Future<void> initializeApp() async {
-    if (!_initialized) {
-      await _loadStoredData();
-      _initialized = true;
-    }
-  }
-
-  static List<Map<String, dynamic>> _users = [];
-
   static List<Map<String, dynamic>> get users => _users;
 
   static Map<String, String> get _headers => {
@@ -41,10 +37,23 @@ class AuthService {
         if (_token != null) 'Authorization': 'Bearer $_token',
       };
 
+  static Future<void> initializeApp() async {
+    if (!_initialized) {
+      await _loadStoredData();
+      _initialized = true;
+    }
+  }
+
   static Future<void> _loadStoredData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       _token = prefs.getString(TOKEN_KEY);
+      _refreshToken = prefs.getString(REFRESH_TOKEN_KEY);
+      final expiryString = prefs.getString(TOKEN_EXPIRY_KEY);
+      if (expiryString != null) {
+        _tokenExpiry = DateTime.parse(expiryString);
+      }
+
       final userDataString = prefs.getString(USER_DATA_KEY);
       _isLoggedIn = prefs.getBool(IS_LOGGED_IN_KEY) ?? false;
 
@@ -57,6 +66,7 @@ class AuthService {
     }
   }
 
+  // Méthode de login
   static Future<void> login(String email, String password) async {
     try {
       final response = await http.post(
@@ -71,9 +81,11 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         _token = data['token'];
+        _refreshToken = data['refresh_token'];
         _userData = data['user'];
+        _tokenExpiry = DateTime.now().add(const Duration(minutes: 15));
         _isLoggedIn = true;
-        await _saveAuthData(_token!, _userData!);
+        await _saveAuthData(_token!, _refreshToken!, _userData!);
       } else {
         final errorData = jsonDecode(response.body);
         throw Exception(errorData['message'] ?? 'Échec de la connexion');
@@ -83,12 +95,95 @@ class AuthService {
     }
   }
 
+  // Méthode de refresh token
+  static Future<bool> refreshTokenIfNeeded() async {
+    if (_tokenExpiry == null || _refreshToken == null) return false;
+
+    // Rafraîchir si moins de 1 minute reste ou token expiré
+    if (_tokenExpiry!
+        .isBefore(DateTime.now().add(const Duration(minutes: 1)))) {
+      try {
+        final response = await http.post(
+          Uri.parse('$baseUrl/auth/refresh'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'refresh_token': _refreshToken}),
+        );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          _token = data['token'];
+          _refreshToken = data['refresh_token'];
+          _tokenExpiry = DateTime.now().add(const Duration(minutes: 15));
+          await _saveAuthData(_token!, _refreshToken!, _userData!);
+          return true;
+        } else {
+          await logout();
+          return false;
+        }
+      } catch (e) {
+        debugPrint('Erreur refresh token: $e');
+        await logout();
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Méthode pour les requêtes authentifiées
+  static Future<http.Response> authenticatedRequest(
+    String method,
+    String endpoint, {
+    Map<String, String>? headers,
+    Object? body,
+  }) async {
+    if (!await refreshTokenIfNeeded()) {
+      throw Exception('Session expirée');
+    }
+
+    final url = Uri.parse('$baseUrl$endpoint');
+    final requestHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $_token',
+      ...?headers,
+    };
+
+    http.Response response;
+    switch (method.toUpperCase()) {
+      case 'GET':
+        response = await http.get(url, headers: requestHeaders);
+        break;
+      case 'POST':
+        response = await http.post(url, headers: requestHeaders, body: body);
+        break;
+      case 'PUT':
+        response = await http.put(url, headers: requestHeaders, body: body);
+        break;
+      case 'DELETE':
+        response = await http.delete(url, headers: requestHeaders);
+        break;
+      default:
+        throw Exception('Méthode HTTP non supportée');
+    }
+
+    if (response.statusCode == 401) {
+      await logout();
+      throw Exception('Session expirée');
+    }
+
+    return response;
+  }
+
+  // Méthode d'inscription
   static Future<void> register(
-      String name, String email, String password, BuildContext context) async {
+    String name,
+    String email,
+    String password,
+    BuildContext context,
+  ) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/register'),
-        headers: _headers,
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'name': name,
           'email': email,
@@ -113,6 +208,17 @@ class AuthService {
     }
   }
 
+  // Méthode de déconnexion
+  static Future<void> logout() async {
+    _isLoggedIn = false;
+    _token = null;
+    _refreshToken = null;
+    _tokenExpiry = null;
+    _userData = null;
+    await _clearAuthData();
+  }
+
+  // Méthodes utilitaires
   static String _getErrorMessage(http.Response response) {
     try {
       final errorData = jsonDecode(response.body);
@@ -122,18 +228,19 @@ class AuthService {
     }
   }
 
-  static Future<void> logout() async {
-    _isLoggedIn = false;
-    _token = null;
-    _userData = null;
-    await _clearAuthData();
-  }
-
   static Future<void> _saveAuthData(
-      String token, Map<String, dynamic> userData) async {
+    String token,
+    String refreshToken,
+    Map<String, dynamic> userData,
+  ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(TOKEN_KEY, token);
+      await prefs.setString(REFRESH_TOKEN_KEY, refreshToken);
+      if (_tokenExpiry != null) {
+        await prefs.setString(
+            TOKEN_EXPIRY_KEY, _tokenExpiry!.toIso8601String());
+      }
       await prefs.setString(USER_DATA_KEY, jsonEncode(userData));
       await prefs.setBool(IS_LOGGED_IN_KEY, true);
     } catch (e) {
@@ -145,6 +252,8 @@ class AuthService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(TOKEN_KEY);
+      await prefs.remove(REFRESH_TOKEN_KEY);
+      await prefs.remove(TOKEN_EXPIRY_KEY);
       await prefs.remove(USER_DATA_KEY);
       await prefs.remove(IS_LOGGED_IN_KEY);
     } catch (e) {
@@ -152,15 +261,14 @@ class AuthService {
     }
   }
 
+  // Méthodes de gestion des utilisateurs
   static Future<void> refreshUserData() async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/me'),
-        headers: _headers,
-      );
+      final response = await authenticatedRequest('GET', '/me');
       if (response.statusCode == 200) {
         final newData = jsonDecode(response.body);
         _userData = newData;
+        await _saveAuthData(_token!, _refreshToken!, _userData!);
       }
     } catch (e) {
       debugPrint('Erreur refresh user data: $e');
@@ -170,7 +278,7 @@ class AuthService {
   static Future<void> updateUserData(Map<String, dynamic> updatedData) async {
     try {
       _userData = updatedData;
-      await _saveAuthData(_token!, updatedData);
+      await _saveAuthData(_token!, _refreshToken!, updatedData);
     } catch (e) {
       debugPrint('Erreur updateUserData: $e');
       rethrow;
@@ -179,17 +287,11 @@ class AuthService {
 
   static Future<void> fetchUsers() async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/users'),
-        headers: _headers,
-      );
-
+      final response = await authenticatedRequest('GET', '/users');
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         final List<dynamic> rows = jsonData['rows'] as List;
         _users = rows.map((user) => user as Map<String, dynamic>).toList();
-      } else if (response.statusCode == 401) {
-        await logout();
       } else {
         throw Exception('Échec du chargement des utilisateurs');
       }
@@ -206,9 +308,9 @@ class AuthService {
     String role,
   ) async {
     try {
-      final response = await http.put(
-        Uri.parse('$baseUrl/users/$userId'),
-        headers: _headers,
+      final response = await authenticatedRequest(
+        'PUT',
+        '/users/$userId',
         body: jsonEncode({
           'name': name,
           'email': email,
@@ -219,13 +321,11 @@ class AuthService {
       if (response.statusCode == 200) {
         final updatedUser = jsonDecode(response.body);
 
-        // Mettre à jour la liste des utilisateurs
         final index = _users.indexWhere((user) => user['id'] == userId);
         if (index != -1) {
           _users[index] = updatedUser;
         }
 
-        // Mettre à jour les données de l'utilisateur courant si c'est le même
         if (_userData != null && _userData!['id'] == userId) {
           await updateUserData(updatedUser);
         }
@@ -240,13 +340,9 @@ class AuthService {
 
   static Future<void> deleteUser(String userId) async {
     try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/users/$userId'),
-        headers: _headers,
-      );
+      final response = await authenticatedRequest('DELETE', '/users/$userId');
 
       if (response.statusCode == 200 || response.statusCode == 204) {
-        // Supprimer l'utilisateur de la liste locale
         _users.removeWhere((user) => user['id'] == userId);
       } else {
         throw Exception('Erreur lors de la suppression de l\'utilisateur');
