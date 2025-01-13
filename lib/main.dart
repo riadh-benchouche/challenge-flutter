@@ -61,7 +61,6 @@ final GoRouter _router = GoRouter(
         state.uri.toString() == '/login' || state.uri.toString() == '/register';
 
     if (!isLoggedIn && !isPublicRoute) {
-      AuthService.logout();
       return '/login';
     }
 
