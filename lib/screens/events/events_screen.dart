@@ -29,15 +29,8 @@ class _EventScreenState extends State<EventScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        if (EventService.shouldSwitchToParticipating) {
-          _tabController.animateTo(1);
-          EventService.resetSwitchFlag();
-        }
-        _loadEvents();
-      }
-    });
+    // Chargement immédiat au lieu d'attendre le post frame callback
+    _loadEvents();
 
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging && mounted) {

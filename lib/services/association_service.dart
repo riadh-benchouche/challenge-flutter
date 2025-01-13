@@ -187,6 +187,26 @@ class AssociationService {
     }
   }
 
+  static Future<bool> checkAssociationMembership(String associationId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/associations/$associationId/check-membership'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return data['isMember'] ?? false;
+      } else if (response.statusCode == 401) {
+        await AuthService.logout();
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Erreur checkAssociationMembership: ${e.toString()}');
+      return false;
+    }
+  }
+
   static Future<void> joinAssociation(String code) async {
     try {
       final response = await http.post(
