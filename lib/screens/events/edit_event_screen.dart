@@ -125,13 +125,6 @@ class _EditEventScreenState extends State<EditEventScreen> {
     return null;
   }
 
-  String? _validateLocation(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Le lieu est requis';
-    }
-    return null;
-  }
-
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDate == null) {

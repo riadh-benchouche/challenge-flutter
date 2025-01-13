@@ -2,11 +2,7 @@ import 'package:challenge_flutter/screens/associations/associations_screen.dart'
 import 'package:challenge_flutter/screens/events/events_screen.dart';
 import 'package:challenge_flutter/screens/home/home_screen.dart';
 import 'package:challenge_flutter/screens/messages/messages_screen.dart';
-import 'package:challenge_flutter/services/association_service.dart';
 import 'package:challenge_flutter/services/auth_service.dart';
-import 'package:challenge_flutter/services/event_service.dart';
-import 'package:challenge_flutter/services/home_service.dart';
-import 'package:challenge_flutter/services/message_service.dart';
 import 'package:challenge_flutter/widgets/global/custom_app_bar.dart';
 import 'package:challenge_flutter/widgets/global/custom_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
