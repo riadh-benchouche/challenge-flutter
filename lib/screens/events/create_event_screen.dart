@@ -26,6 +26,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   bool _isLoading = false;
   List<CategoryModel>? _categories;
   List<Association>? _associations;
+  final List<String> _locations = ['Nation 01', 'Nation 02', 'Errard'];
+  String? _selectedLocation;
 
   @override
   void initState() {
@@ -132,6 +134,12 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         associationId: _selectedAssociation!.id,
       );
 
+      // Rafraîchir la liste des événements
+      await Future.wait([
+        EventService.getAssociationEvents(),
+        EventService.getParticipatingEvents(),
+      ]);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -139,7 +147,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        context.pop();
+        context.go('/events');
       }
     } catch (e) {
       if (mounted) {
@@ -228,21 +236,67 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         enabled: !_isLoading,
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _locationController,
-                        decoration: const InputDecoration(
-                          labelText: 'Lieu',
-                          hintText: 'Lieu de l\'événement',
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Le lieu est requis';
-                          }
-                          return null;
-                        },
-                        enabled: !_isLoading,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text(
+                            'Lieu',
+                            style: TextStyle(fontSize: 16, color: Colors.black87),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _locations.map((location) {
+                              final isSelected = _selectedLocation == location;
+                              return InkWell(
+                                onTap: _isLoading
+                                    ? null
+                                    : () {
+                                  setState(() {
+                                    _selectedLocation = location;
+                                    _locationController.text = location;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? theme.primaryColor : Colors.white,
+                                    border: Border.all(
+                                      color: isSelected ? theme.primaryColor : Colors.grey,
+                                      width: 1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    location,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.black87,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          if (_formKey.currentState?.validate() == false &&
+                              _selectedLocation == null)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 8),
+                              child: Text(
+                                'Le lieu est requis',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 30),
                       InkWell(
                         onTap: !_isLoading ? () => _selectDate(context) : null,
                         child: InputDecorator(

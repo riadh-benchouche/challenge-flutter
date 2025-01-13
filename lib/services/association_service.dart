@@ -79,7 +79,8 @@ class AssociationService {
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonData = jsonDecode(response.body);
-        _associations = jsonData.map((json) => Association.fromJson(json)).toList();
+        _associations =
+            jsonData.map((json) => Association.fromJson(json)).toList();
         return _associations!;
       } else if (response.statusCode == 401) {
         await AuthService.logout();
@@ -131,7 +132,8 @@ class AssociationService {
           _associationsAll = []; // Correction ici
           return [];
         }
-        _associationsAll = rows.map((json) => Association.fromJson(json)).toList(); // Et ici
+        _associationsAll =
+            rows.map((json) => Association.fromJson(json)).toList(); // Et ici
         return _associationsAll!;
       } else if (response.statusCode == 401) {
         await AuthService.logout();
@@ -144,9 +146,9 @@ class AssociationService {
   }
 
   static Future<void> updateAssociationAdmin(
-      String id,
-      Map<String, dynamic> data,
-      ) async {
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     try {
       final response = await http.put(
         Uri.parse('$baseUrl/associations/$id'),
@@ -160,7 +162,8 @@ class AssociationService {
         return;
       }
 
-      throw Exception('Impossible de mettre à jour l\'association : ${response.body}');
+      throw Exception(
+          'Impossible de mettre à jour l\'association : ${response.body}');
     } catch (e) {
       debugPrint('Erreur updateAssociationAdmin: ${e.toString()}');
       rethrow;
@@ -220,7 +223,7 @@ class AssociationService {
       } else if (response.statusCode == 409) {
         throw Exception('Vous êtes déjà membre de cette association');
       } else if (response.statusCode == 401) {
-        await AuthService.logout();
+        await AuthService.refreshTokenIfNeeded();
       } else {
         throw Exception('Impossible de rejoindre l\'association');
       }

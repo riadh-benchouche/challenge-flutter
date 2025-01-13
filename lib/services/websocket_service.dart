@@ -23,7 +23,7 @@ class WebSocketService {
     }
 
     try {
-      const wsUrl = 'ws://localhost:3000/ws';
+      const wsUrl = 'ws://10.0.2.2:3000/ws';
       debugPrint('Connecting to WebSocket...');
 
       _channel = IOWebSocketChannel.connect(
