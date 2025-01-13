@@ -114,6 +114,22 @@ class _EventParticipantsScreenState extends State<EventParticipantsScreen> {
       );
     }
 
+    // Si aucun participant n'est présent, afficher un message
+    if (_participants.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Participants'),
+        ),
+        body: const Center(
+          child: Text(
+            'Aucun participant pour cet événement.',
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
+      );
+    }
+
+    // Afficher la liste des participants
     return Scaffold(
       appBar: AppBar(
         title: const Text('Participants'),

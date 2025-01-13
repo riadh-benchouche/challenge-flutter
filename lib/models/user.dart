@@ -6,6 +6,7 @@ class User {
   final bool isActive;
   final DateTime createdAt;
   final String role;
+  final int pointsOpen;
 
   User({
     required this.id,
@@ -15,6 +16,7 @@ class User {
     required this.isActive,
     required this.createdAt,
     required this.role,
+    required this.pointsOpen,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,7 @@ class User {
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
       role: json['role'] ?? 'user',
+      pointsOpen: json['points_open'] ?? 0,
     );
   }
 
@@ -40,6 +43,7 @@ class User {
       'is_active': isActive,
       'created_at': createdAt.toIso8601String(),
       'role': role,
+      'points_open': pointsOpen,
     };
   }
 
@@ -51,6 +55,7 @@ class User {
     bool? isActive,
     DateTime? createdAt,
     String? role,
+    int? pointsOpen,
   }) {
     return User(
       id: id ?? this.id,
@@ -60,6 +65,7 @@ class User {
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       role: role ?? this.role,
+      pointsOpen: pointsOpen ?? this.pointsOpen,
     );
   }
 }
