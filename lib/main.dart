@@ -8,6 +8,7 @@ import 'package:challenge_flutter/screens/edit_profile/edit_profile_screen.dart'
 import 'package:challenge_flutter/screens/events/create_event_screen.dart';
 import 'package:challenge_flutter/screens/events/edit_event_screen.dart';
 import 'package:challenge_flutter/screens/layout/admin_layout.dart';
+import 'package:challenge_flutter/screens/layout/connectivity_wrapper.dart';
 import 'package:challenge_flutter/screens/layout/main_layout.dart';
 import 'package:challenge_flutter/screens/messages/message_detail_screen.dart';
 import 'package:challenge_flutter/screens/profile/profile_screen.dart';
@@ -253,75 +254,77 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      title: 'Flutter Association Manager',
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('fr', 'FR'),
-        Locale('en', 'US'),
-      ],
-      locale: const Locale('fr', 'FR'),
-      theme: ThemeData(
-        useMaterial3: true,
-        primaryColor: const Color(0xFF001B40),
-        colorScheme: ColorScheme.fromSwatch().copyWith(
-          secondary: const Color(0xFF00EAFF),
-        ),
-        scaffoldBackgroundColor: Colors.white,
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(
-            color: Color(0xFF393939),
-            fontSize: 13,
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w400,
+    return ConnectivityWrapper(
+      child: MaterialApp.router(
+        debugShowCheckedModeBanner: false,
+        title: 'Flutter Association Manager',
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('fr', 'FR'),
+          Locale('en', 'US'),
+        ],
+        locale: const Locale('fr', 'FR'),
+        theme: ThemeData(
+          useMaterial3: true,
+          primaryColor: const Color(0xFF001B40),
+          colorScheme: ColorScheme.fromSwatch().copyWith(
+            secondary: const Color(0xFF00EAFF),
           ),
-          bodyMedium: TextStyle(
-            color: Color(0xFF837E93),
-            fontSize: 13,
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        inputDecorationTheme: const InputDecorationTheme(
-          labelStyle: TextStyle(
-            color: Color(0xFF001B40),
-            fontSize: 15,
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w600,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-            borderSide: BorderSide(
-              width: 1,
+          scaffoldBackgroundColor: Colors.white,
+          textTheme: const TextTheme(
+            bodyLarge: TextStyle(
+              color: Color(0xFF393939),
+              fontSize: 13,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
+            ),
+            bodyMedium: TextStyle(
               color: Color(0xFF837E93),
+              fontSize: 13,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w500,
             ),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-            borderSide: BorderSide(
-              width: 1,
+          inputDecorationTheme: const InputDecorationTheme(
+            labelStyle: TextStyle(
               color: Color(0xFF001B40),
+              fontSize: 15,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w600,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(10)),
+              borderSide: BorderSide(
+                width: 1,
+                color: Color(0xFF837E93),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(10)),
+              borderSide: BorderSide(
+                width: 1,
+                color: Color(0xFF001B40),
+              ),
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF001B40),
+              textStyle: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontFamily: 'Poppins-Bold',
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF001B40),
-            textStyle: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontFamily: 'Poppins-Bold',
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
+        routerConfig: _router,
       ),
-      routerConfig: _router,
     );
   }
 }
