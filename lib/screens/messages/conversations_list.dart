@@ -42,18 +42,36 @@ class ConversationsList extends StatelessWidget {
           );
         }
 
+        // Gestion des erreurs
         if (snapshot.hasError) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const Icon(
+                  Icons.message_outlined,
+                  size: 64,
+                  color: Colors.grey,
+                ),
                 const SizedBox(height: 16),
-                Text('Erreur: ${snapshot.error}'),
-                const SizedBox(height: 8),
+                const Text(
+                  'Aucune conversation disponible',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => (context as Element).markNeedsBuild(),
-                  child: const Text('Réessayer'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text('Actualiser'),
                 ),
               ],
             ),
@@ -62,12 +80,43 @@ class ConversationsList extends StatelessWidget {
 
         final associations = MessageService.userAssociations;
 
+        // Si pas de données
         if (associations.isEmpty) {
-          return const Center(
-            child: Text('Aucune conversation'),
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.message_outlined,
+                  size: 64,
+                  color: Colors.grey,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Aucune conversation',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => (context as Element).markNeedsBuild(),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text('Actualiser'),
+                ),
+              ],
+            ),
           );
         }
 
+        // Liste des conversations
         return RefreshIndicator(
           onRefresh: () async => (context as Element).markNeedsBuild(),
           child: ListView.separated(
@@ -88,7 +137,7 @@ class ConversationsList extends StatelessWidget {
                   backgroundImage: association.imageUrl.isEmpty
                       ? const AssetImage('assets/images/association-1.jpg')
                       : NetworkImage(
-                          'https://10.0.2.2:8080/${association.imageUrl}',
+                          'https://invooce.online/${association.imageUrl}',
                         ) as ImageProvider,
                 ),
                 title: Text(

@@ -41,7 +41,7 @@ class AssociationCard extends StatelessWidget {
             Stack(
               children: [
                 Image.network(
-                  'https://10.0.2.2:8080/$imageSrc',
+                  'https://invooce.online/$imageSrc',
                   height: 140,
                   width: double.infinity,
                   fit: BoxFit.cover,
