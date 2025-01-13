@@ -1,6 +1,7 @@
 import 'package:challenge_flutter/models/event.dart';
 import 'package:challenge_flutter/services/event_service.dart';
 import 'package:challenge_flutter/widgets/home/event_card_widget.dart';
+import 'package:challenge_flutter/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -119,6 +120,7 @@ class _EventScreenState extends State<EventScreen>
         itemCount: events.length,
         itemBuilder: (context, index) {
           final event = events[index];
+
           return EventCard(
             eventId: event.id,
             eventName: event.name,
@@ -127,6 +129,8 @@ class _EventScreenState extends State<EventScreen>
             eventAssociation: event.associationName,
             eventCategory: event.categoryName,
             theme: Theme.of(context),
+            isOwner:
+                event.association?['owner_id'] == AuthService.userData?['id'],
           );
         },
       ),

@@ -36,7 +36,7 @@ class TopAssociationCard extends StatelessWidget {
                           fit: BoxFit.cover,
                         )
                       : Image.network(
-                          'https://invooce.online/$imageSrc',
+                          'https://10.0.2.2:8080/$imageSrc',
                           width: double.infinity,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {

@@ -88,7 +88,8 @@ class EventService {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = jsonDecode(utf8.decode(response.bodyBytes, allowMalformed: true));
+        final Map<String, dynamic> jsonData =
+            jsonDecode(utf8.decode(response.bodyBytes, allowMalformed: true));
         _associationEvents = (jsonData['rows'] as List)
             .map((json) => Event.fromJson(json))
             .toList();
@@ -261,6 +262,47 @@ class EventService {
       }
     } catch (e) {
       debugPrint('Error in createEvent: $e');
+      rethrow;
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getEventParticipations(
+      String eventId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/events/$eventId/participations'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body)['rows'];
+        return data.map((item) => item as Map<String, dynamic>).toList();
+      } else if (response.statusCode == 401) {
+        await AuthService.logout();
+      }
+      throw Exception('Échec du chargement des participations');
+    } catch (e) {
+      debugPrint('Error in getEventParticipations: $e');
+      rethrow;
+    }
+  }
+
+  static Future<void> confirmParticipation(String participationId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/users/participations/$participationId/confirm'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('Participation confirmée');
+      } else if (response.statusCode == 401) {
+        await AuthService.logout();
+      } else {
+        throw Exception('Échec de la confirmation de la participation');
+      }
+    } catch (e) {
+      debugPrint('Error in confirmParticipation: $e');
       rethrow;
     }
   }

@@ -10,6 +10,7 @@ class EventCard extends StatelessWidget {
   final String eventAssociation;
   final String eventCategory;
   final ThemeData theme;
+  final bool isOwner;
 
   const EventCard({
     super.key,
@@ -20,6 +21,7 @@ class EventCard extends StatelessWidget {
     required this.eventAssociation,
     required this.eventCategory,
     required this.theme,
+    this.isOwner = false,
   });
 
   String _formatDate(String dateString) {
@@ -142,6 +144,25 @@ class EventCard extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 10),
+              // Ajouter le bouton "Propriétaire" en bas sous la catégorie
+              if (isOwner)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'Propriétaire',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

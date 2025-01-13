@@ -117,7 +117,7 @@ class _MessagesScreenState extends State<MessagesScreen>
               backgroundImage: association.imageUrl.isEmpty
                   ? const AssetImage('assets/images/association-1.jpg')
                   : NetworkImage(
-                      'https://invooce.online/${association.imageUrl}',
+                      'https://10.0.2.2:8080/${association.imageUrl}',
                     ) as ImageProvider,
             ),
             title: Text(

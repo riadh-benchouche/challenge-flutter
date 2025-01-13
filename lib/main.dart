@@ -24,6 +24,7 @@ import 'screens/associations/join_association_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
 import 'screens/admin/manage_categories_screen.dart';
+import 'screens/events/event_participants_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -158,6 +159,15 @@ final GoRouter _router = GoRouter(
                   NoTransitionPage(
                 child: EventDetailScreen(
                     eventId: state.pathParameters['eventId']!),
+              ),
+            ),
+            GoRoute(
+              path: ':eventId/participants',
+              pageBuilder: (BuildContext context, GoRouterState state) =>
+                  NoTransitionPage(
+                child: EventParticipantsScreen(
+                  eventId: state.pathParameters['eventId']!,
+                ),
               ),
             ),
           ],

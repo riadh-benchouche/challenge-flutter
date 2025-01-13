@@ -128,7 +128,7 @@ class _AssociationDetailScreenState extends State<AssociationDetailScreen> {
               borderRadius:
                   const BorderRadius.vertical(bottom: Radius.circular(0)),
               child: Image.network(
-                'https://www.invooce.online/${association.imageUrl}',
+                'https://10.0.2.2:8080/${association.imageUrl}',
                 height: 380,
                 width: double.infinity,
                 fit: BoxFit.cover,

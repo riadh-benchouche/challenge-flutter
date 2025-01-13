@@ -185,7 +185,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
 
     final event = _event!;
-    final isOwner = AuthService.userData?['role'] == 'association_leader';
+    final isOwner =
+        event.association?['owner_id'] == AuthService.userData?['id'];
     final formattedDate =
         DateFormat('dd MMMM yyyy à HH:mm', 'fr_FR').format(event.date);
 
@@ -308,6 +309,34 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                               ),
                       ),
                     ),
+                    if (isOwner) // Si c'est l'admin/propriétaire
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                            ),
+                            onPressed: () {
+                              // Ouvrir la page des participants
+                              context.go('/events/${event.id}/participants');
+                            },
+                            child: const Text(
+                              'Voir les participants',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
