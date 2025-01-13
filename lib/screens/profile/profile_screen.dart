@@ -148,6 +148,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     value: userData?['is_active'] == true ? 'Actif' : 'Inactif',
                     iconColor: Colors.blue,
                   ),
+                  const Divider(height: 1),
+                  _buildInfoTile(
+                    icon: Icons.star,
+                    title: 'Points Open',
+                    value: userData?['points_open']?.toString() ?? '0',
+                    iconColor: Colors.amberAccent,
+                  ),
                 ],
               ),
             ),
