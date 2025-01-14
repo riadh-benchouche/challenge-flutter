@@ -16,11 +16,6 @@ class _EventScreenState extends State<EventScreen>
     with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
   final FocusNode _focusNode = FocusNode();
-  bool _isLoadingAssoc = false;
-  bool _isLoadingParticipating = false;
-  List<Event>? _associationEvents;
-  List<Event>? _participatingEvents;
-  String? _error;
 
   @override
   bool get wantKeepAlive => true;
@@ -30,12 +25,11 @@ class _EventScreenState extends State<EventScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
 
-    // Chargement immédiat au lieu d'attendre le post frame callback
     _loadEvents();
 
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging && mounted) {
-        _loadEvents();
+        setState(() {});
       }
     });
   }
@@ -48,85 +42,111 @@ class _EventScreenState extends State<EventScreen>
   }
 
   Future<void> _loadEvents() async {
-    if (!mounted) return;
-
-    setState(() {
-      _error = null;
-      if (_tabController.index == 0) {
-        _isLoadingAssoc = true;
-      } else {
-        _isLoadingParticipating = true;
-      }
-    });
-
-    try {
-      if (_tabController.index == 0) {
-        _associationEvents = await EventService.getAssociationEvents();
-      } else {
-        _participatingEvents = await EventService.getParticipatingEvents();
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _error = e.toString());
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingAssoc = false;
-          _isLoadingParticipating = false;
-        });
-      }
-    }
+    setState(() {}); // Force le rebuild du FutureBuilder
   }
 
   Widget _buildEventsList(List<Event>? events, bool isLoading) {
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Erreur: $_error'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadEvents,
-              child: const Text('Réessayer'),
+    return FutureBuilder<List<Event>>(
+      future: _tabController.index == 0
+          ? EventService.getAssociationEvents()
+          : EventService.getParticipatingEvents(),
+      builder: (context, snapshot) {
+        // Gestion du chargement
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Chargement des événements...'),
+              ],
             ),
-          ],
-        ),
-      );
-    }
-
-    if (events == null || events.isEmpty) {
-      return const Center(
-        child: Text('Aucun événement trouvé'),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadEvents,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        itemCount: events.length,
-        itemBuilder: (context, index) {
-          final event = events[index];
-
-          return EventCard(
-            eventId: event.id,
-            eventName: event.name,
-            eventDate: event.date.toString(),
-            eventLocation: event.location,
-            eventAssociation: event.associationName,
-            eventCategory: event.categoryName,
-            theme: Theme.of(context),
-            isOwner:
-                event.association?['owner_id'] == AuthService.userData?['id'],
           );
-        },
-      ),
+        }
+
+        // Gestion des erreurs
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.red,
+                  size: 60,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Une erreur est survenue:\n${snapshot.error}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      // Force le rebuild du FutureBuilder
+                      _loadEvents();
+                    });
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Réessayer'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Gestion de l'absence de données
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.event_busy,
+                  size: 60,
+                  color: Colors.grey,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _tabController.index == 0
+                      ? 'Aucun événement disponible'
+                      : 'Vous ne participez à aucun événement',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Affichage des événements
+        return RefreshIndicator(
+          onRefresh: _loadEvents,
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              final event = snapshot.data![index];
+              return EventCard(
+                eventId: event.id,
+                eventName: event.name,
+                eventDate: event.date.toString(),
+                eventLocation: event.location,
+                eventAssociation: event.associationName,
+                eventCategory: event.categoryName,
+                theme: Theme.of(context),
+                isOwner: event.association?['owner_id'] ==
+                    AuthService.userData?['id'],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -177,9 +197,8 @@ class _EventScreenState extends State<EventScreen>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildEventsList(_associationEvents, _isLoadingAssoc),
-                  _buildEventsList(
-                      _participatingEvents, _isLoadingParticipating),
+                  _buildEventsList(null, false),
+                  _buildEventsList(null, false),
                 ],
               ),
             ),

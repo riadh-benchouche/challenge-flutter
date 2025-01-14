@@ -77,6 +77,15 @@ class EventService {
           'Authorization': 'Bearer ${AuthService.token}',
       };
 
+  static Future<void> resetAndRefreshEvents() async {
+    _associationEvents = null;
+    _participatingEvents = null;
+    await Future.wait([
+      getAssociationEvents(),
+      getParticipatingEvents(),
+    ]);
+  }
+
   static Future<List<Event>> getAssociationEvents() async {
     if (_isLoadingAssociations) return _associationEvents ?? [];
 
