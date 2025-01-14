@@ -17,6 +17,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
   String? _name;
+  String? _plainPassword;
   File? _image;
 
   Future<void> _pickImage() async {
@@ -94,29 +95,53 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     try {
-      // Mettre à jour le profil avec la nouvelle méthode updateUser
-      await AuthService.updateUser(
-        currentUserId,
-        _name!,
-        AuthService.userData?['email'] ?? '',
-        AuthService.userData?['role'] ?? 'user',
+      // Construire les données de mise à jour
+      final updateData = {
+        'name': _name!,
+        if (_plainPassword != null && _plainPassword!.isNotEmpty)
+          'plain_password':
+              _plainPassword, // Envoi du mot de passe si renseigné
+      };
+
+      // Envoyer la requête de mise à jour
+      final response = await http.put(
+        Uri.parse('${AuthService.baseUrl}/users/$currentUserId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(updateData),
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profil mis à jour avec succès !')),
-      );
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
 
-      // Si une image est sélectionnée, l'uploader
-      if (_image != null) {
-        final bool success = await _uploadImage(currentUserId, token);
-        if (success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Image mise à jour avec succès !')),
-          );
+        // Mise à jour des données utilisateur dans le service
+        final updatedUserData = {
+          ...(AuthService.userData ?? {}),
+          ...(responseData as Map<String, dynamic>),
+        };
+        await AuthService.updateUserData(updatedUserData);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profil mis à jour avec succès !')),
+        );
+
+        // Si une image est sélectionnée, l'uploader
+        if (_image != null) {
+          final bool success = await _uploadImage(currentUserId, token);
+          if (success && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Image mise à jour avec succès !')),
+            );
+          }
         }
-      }
 
-      if (mounted) Navigator.of(context).pop();
+        if (mounted) Navigator.of(context).pop();
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['message'] ?? 'Erreur inconnue');
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -185,6 +210,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   fillColor: Colors.grey[200],
                 ),
                 readOnly: true,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                obscureText: true,
+                decoration:
+                    const InputDecoration(labelText: 'Nouveau mot de passe'),
+                onSaved: (value) => _plainPassword = value,
+                validator: (value) {
+                  if (value != null && value.isNotEmpty && value.length < 6) {
+                    return 'Le mot de passe doit contenir au moins 6 caractères';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 20),
               SizedBox(
