@@ -22,7 +22,9 @@ class ChatbotService {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final Map<String, dynamic> data = jsonDecode(utf8DecodedBody);
+
         return ChatbotMessage.fromBot(data['response']);
       } else {
         throw Exception('Échec de l\'envoi du message au chatbot');
