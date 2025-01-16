@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
 
 class AuthService {
   static const String TOKEN_KEY = 'auth_token';
@@ -10,7 +12,7 @@ class AuthService {
   static const String IS_LOGGED_IN_KEY = 'is_logged_in';
   static const String TOKEN_EXPIRY_KEY = 'token_expiry';
 
-  static String baseUrl = 'https://invooce.online'; // Android emulator
+  static String baseUrl = 'http://localhost:3000'; // Android emulator
 
   static String? _token;
   static String? _refreshToken;
@@ -170,12 +172,15 @@ class AuthService {
 
   // Méthode d'inscription
   static Future<void> register(
-    String name,
-    String email,
-    String password,
-    BuildContext context,
-  ) async {
+      String name,
+      String email,
+      String password,
+      BuildContext context,
+      ) async {
     try {
+      // Récupérer le token Firebase
+      String? firebaseToken = await getFirebaseToken();
+
       final response = await http.post(
         Uri.parse('$baseUrl/auth/register'),
         headers: {'Content-Type': 'application/json'},
@@ -183,6 +188,7 @@ class AuthService {
           'name': name,
           'email': email,
           'password': password,
+          'firebase_token': firebaseToken,
         }),
       );
 
@@ -202,6 +208,7 @@ class AuthService {
       throw Exception('Erreur d\'inscription: ${error.toString()}');
     }
   }
+
 
   // Méthode de déconnexion
   static Future<void> logout() async {
@@ -347,4 +354,15 @@ class AuthService {
       rethrow;
     }
   }
+
+  static Future<String?> getFirebaseToken() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    try {
+      return await messaging.getToken(vapidKey:"BONuruARy1l6U3xYRw2ALx5JMIWJv5Y5cGw_iYCXVEwTfIjANrI2gqzEnk5jiD4-zGul0OD63ueKwvzfRhthz5o");
+    } catch (e) {
+      debugPrint('Erreur lors de la récupération du token Firebase : $e');
+      return null;
+    }
+  }
+
 }

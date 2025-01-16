@@ -13,6 +13,7 @@ import 'package:challenge_flutter/screens/layout/main_layout.dart';
 import 'package:challenge_flutter/screens/messages/message_detail_screen.dart';
 import 'package:challenge_flutter/screens/profile/profile_screen.dart';
 import 'package:challenge_flutter/services/auth_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -27,12 +28,17 @@ import 'screens/admin/admin_dashboard_screen.dart';
 import 'screens/admin/manage_categories_screen.dart';
 import 'screens/events/event_participants_screen.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = MyHttpOverrides();
   await initializeDateFormatting('fr_FR', null);
   await AuthService.initializeApp();
-
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   if (AuthService.token == null || AuthService.userData?['id'] == null) {
     await AuthService.logout();
   }
