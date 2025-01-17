@@ -1,16 +1,38 @@
-# challenge_flutter
+# Gestionnaire d'Associations Scolaires 📚
 
-A new Flutter project.
+Application Flutter pour la gestion des associations au sein d'un établissement scolaire.
 
-## Getting Started
+## Fonctionnalités
 
-This project is a starting point for a Flutter application.
+* Gestion des membres des associations
+* Planning des événements
+* Communication interne
+* Gestion des points OPEN
 
-A few resources to get you started if this is your first Flutter project:
+## Prérequis
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+* Flutter SDK (version 3.x)
+* Dart SDK (version 3.x)
+* Firebase (authentification et base de données)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Installation
+
+```bash
+# Cloner le dépôt
+git clone https://github.com/riadh-benchouche/challenge-flutter.git
+
+# Accéder au répertoire
+cd challenge-flutter
+
+# Installer les dépendances
+flutter pub get
+
+# Lancer l'application
+flutter run
+```
+
+## Configuration Firebase
+
+1. Créer un projet Firebase
+2. Ajouter les fichiers de configuration
+3. Activer l'authentification et Firestore
