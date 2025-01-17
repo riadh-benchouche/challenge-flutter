@@ -8,6 +8,7 @@ import 'package:challenge_flutter/screens/edit_profile/edit_profile_screen.dart'
 import 'package:challenge_flutter/screens/events/create_event_screen.dart';
 import 'package:challenge_flutter/screens/events/edit_event_screen.dart';
 import 'package:challenge_flutter/screens/layout/admin_layout.dart';
+import 'package:challenge_flutter/screens/layout/connectivity_wrapper.dart';
 import 'package:challenge_flutter/screens/layout/main_layout.dart';
 import 'package:challenge_flutter/screens/messages/message_detail_screen.dart';
 import 'package:challenge_flutter/screens/profile/profile_screen.dart';
@@ -15,6 +16,8 @@ import 'package:challenge_flutter/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
@@ -26,12 +29,80 @@ import 'screens/admin/admin_dashboard_screen.dart';
 import 'screens/admin/manage_categories_screen.dart';
 import 'screens/events/event_participants_screen.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  print('Message reçu en arrière-plan: ${message.messageId}');
+}
+
+Future<void> initializeNotifications() async {
+  // Initialiser Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Configurer le gestionnaire de messages en arrière-plan
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // Demander la permission pour les notifications
+  final messaging = FirebaseMessaging.instance;
+  await messaging.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+
+  // Initialiser Flutter Local Notifications
+  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const iosSettings = DarwinInitializationSettings();
+  const initializationSettings = InitializationSettings(
+    android: androidSettings,
+    iOS: iosSettings,
+  );
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+  // Configurer les callbacks pour les messages
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print('Message reçu en premier plan: ${message.messageId}');
+
+    RemoteNotification? notification = message.notification;
+    AndroidNotification? android = message.notification?.android;
+
+    if (notification != null && android != null) {
+      flutterLocalNotificationsPlugin.show(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'high_importance_channel',
+            'High Importance Notifications',
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+        ),
+      );
+    }
+  });
+
+  // Gérer les notifications lorsque l'app est en arrière-plan et qu'on clique dessus
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    print('Message ouvert depuis l\'arrière-plan: ${message.messageId}');
+    // Ici vous pouvez ajouter la logique pour naviguer vers un écran spécifique
+  });
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = MyHttpOverrides();
+  await initializeNotifications();
   await initializeDateFormatting('fr_FR', null);
   await AuthService.initializeApp();
-
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   if (AuthService.token == null || AuthService.userData?['id'] == null) {
     await AuthService.logout();
   }
@@ -253,75 +324,77 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      title: 'Flutter Association Manager',
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('fr', 'FR'),
-        Locale('en', 'US'),
-      ],
-      locale: const Locale('fr', 'FR'),
-      theme: ThemeData(
-        useMaterial3: true,
-        primaryColor: const Color(0xFF001B40),
-        colorScheme: ColorScheme.fromSwatch().copyWith(
-          secondary: const Color(0xFF00EAFF),
-        ),
-        scaffoldBackgroundColor: Colors.white,
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(
-            color: Color(0xFF393939),
-            fontSize: 13,
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w400,
+    return ConnectivityWrapper(
+      child: MaterialApp.router(
+        debugShowCheckedModeBanner: false,
+        title: 'Flutter Association Manager',
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('fr', 'FR'),
+          Locale('en', 'US'),
+        ],
+        locale: const Locale('fr', 'FR'),
+        theme: ThemeData(
+          useMaterial3: true,
+          primaryColor: const Color(0xFF001B40),
+          colorScheme: ColorScheme.fromSwatch().copyWith(
+            secondary: const Color(0xFF00EAFF),
           ),
-          bodyMedium: TextStyle(
-            color: Color(0xFF837E93),
-            fontSize: 13,
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        inputDecorationTheme: const InputDecorationTheme(
-          labelStyle: TextStyle(
-            color: Color(0xFF001B40),
-            fontSize: 15,
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w600,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-            borderSide: BorderSide(
-              width: 1,
+          scaffoldBackgroundColor: Colors.white,
+          textTheme: const TextTheme(
+            bodyLarge: TextStyle(
+              color: Color(0xFF393939),
+              fontSize: 13,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
+            ),
+            bodyMedium: TextStyle(
               color: Color(0xFF837E93),
+              fontSize: 13,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w500,
             ),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-            borderSide: BorderSide(
-              width: 1,
+          inputDecorationTheme: const InputDecorationTheme(
+            labelStyle: TextStyle(
               color: Color(0xFF001B40),
+              fontSize: 15,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w600,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(10)),
+              borderSide: BorderSide(
+                width: 1,
+                color: Color(0xFF837E93),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(10)),
+              borderSide: BorderSide(
+                width: 1,
+                color: Color(0xFF001B40),
+              ),
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF001B40),
+              textStyle: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontFamily: 'Poppins-Bold',
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF001B40),
-            textStyle: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontFamily: 'Poppins-Bold',
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
+        routerConfig: _router,
       ),
-      routerConfig: _router,
     );
   }
 }

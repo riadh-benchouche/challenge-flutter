@@ -67,7 +67,6 @@ class _AssociationDetailScreenState extends State<AssociationDetailScreen> {
 
     try {
       await AssociationService.joinAssociation(_association!.code);
-      // Après avoir rejoint, vérifier le nouveau statut
       final isMember = await AssociationService.checkAssociationMembership(
           widget.associationId);
 
@@ -77,6 +76,66 @@ class _AssociationDetailScreenState extends State<AssociationDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Vous avez rejoint l\'association avec succès !'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isJoining = false);
+      }
+    }
+  }
+
+  Future<void> _leaveAssociation() async {
+    if (!mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Quitter l\'association'),
+        content:
+            const Text('Êtes-vous sûr de vouloir quitter cette association ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Quitter'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isJoining = true);
+
+    try {
+      await AssociationService.leaveAssociation(widget.associationId);
+
+      if (!mounted) return;
+      setState(() => _isMember = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Vous avez quitté l\'association'),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
           shape:
@@ -177,7 +236,7 @@ class _AssociationDetailScreenState extends State<AssociationDetailScreen> {
               borderRadius:
                   const BorderRadius.vertical(bottom: Radius.circular(0)),
               child: Image.network(
-                'https://10.0.2.2:8080/${association.imageUrl}',
+                'https://invooce.online/${association.imageUrl}',
                 height: 380,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -354,18 +413,18 @@ class _AssociationDetailScreenState extends State<AssociationDetailScreen> {
 
     if (_isMember) {
       return ElevatedButton.icon(
-        icon: const Icon(Icons.check_circle, color: Colors.white),
+        icon: const Icon(Icons.exit_to_app, color: Colors.white),
         label: const Text(
-          'Membre',
+          'Quitter',
           style: TextStyle(color: Colors.white),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green,
+          backgroundColor: Colors.red,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         ),
-        onPressed: null,
+        onPressed: _leaveAssociation,
       );
     }
 

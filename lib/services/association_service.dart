@@ -321,4 +321,25 @@ class AssociationService {
 
     throw Exception('Impossible de mettre à jour l\'image : ${response.body}');
   }
+
+  static Future<void> leaveAssociation(String associationId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/associations/$associationId/leave'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        // Rafraîchir la liste des associations après avoir quitté
+        await getAssociationsByUser(AuthService.userData!['id']);
+      } else if (response.statusCode == 401) {
+        await AuthService.refreshTokenIfNeeded();
+      } else {
+        throw Exception('Impossible de quitter l\'association');
+      }
+    } catch (e) {
+      debugPrint('Erreur leaveAssociation: ${e.toString()}');
+      rethrow;
+    }
+  }
 }

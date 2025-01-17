@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "207870710729",
+    "project_id": "challengeflutter-5d5eb",
+    "storage_bucket": "challengeflutter-5d5eb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:207870710729:android:bd330028d3418ae0254e18",
+        "android_client_info": {
+          "package_name": "com.esgi.asso"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAaKmkcHZXwJqf6KcTOPkInJtDRI_F9rWA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:207870710729:android:9d7e5584337263aa254e18",
+        "android_client_info": {
+          "package_name": "com.example.challenge_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAaKmkcHZXwJqf6KcTOPkInJtDRI_F9rWA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
