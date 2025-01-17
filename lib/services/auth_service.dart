@@ -12,7 +12,7 @@ class AuthService {
   static const String IS_LOGGED_IN_KEY = 'is_logged_in';
   static const String TOKEN_EXPIRY_KEY = 'token_expiry';
 
-  static String baseUrl = 'http://localhost:3000'; // Android emulator
+  static String baseUrl = 'http://10.0.2.2:3000'; // Android emulator
 
   static String? _token;
   static String? _refreshToken;
