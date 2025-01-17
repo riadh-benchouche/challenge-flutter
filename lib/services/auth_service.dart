@@ -129,7 +129,8 @@ class AuthService {
         );
 
         if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
+          final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+          final data = jsonDecode(utf8DecodedBody);
           _token = data['token'];
           _refreshToken = data['refresh_token'];
           _tokenExpiry = DateTime.now().add(const Duration(minutes: 15));
@@ -290,7 +291,8 @@ class AuthService {
     try {
       final response = await authenticatedRequest('GET', '/me');
       if (response.statusCode == 200) {
-        final newData = jsonDecode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final newData = jsonDecode(utf8DecodedBody);
         _userData = newData;
         await _saveAuthData(_token!, _refreshToken!, _userData!);
       }
@@ -313,7 +315,8 @@ class AuthService {
     try {
       final response = await authenticatedRequest('GET', '/users');
       if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final Map<String, dynamic> jsonData = jsonDecode(utf8DecodedBody);
         final List<dynamic> rows = jsonData['rows'] as List;
         _users = rows.map((user) => user as Map<String, dynamic>).toList();
       } else {
@@ -343,7 +346,8 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        final updatedUser = jsonDecode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final updatedUser = jsonDecode(utf8DecodedBody);
 
         final index = _users.indexWhere((user) => user['id'] == userId);
         if (index != -1) {

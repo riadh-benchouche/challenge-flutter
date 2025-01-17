@@ -126,7 +126,8 @@ class EventService {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final Map<String, dynamic> jsonData = jsonDecode(utf8DecodedBody);
         _participatingEvents = (jsonData['rows'] as List)
             .map((json) => Event.fromJson(json))
             .toList();
@@ -151,7 +152,8 @@ class EventService {
       );
 
       if (response.statusCode == 200) {
-        _currentEvent = Event.fromJson(jsonDecode(response.body));
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        _currentEvent = Event.fromJson(jsonDecode(utf8DecodedBody));
         return _currentEvent!;
       } else if (response.statusCode == 401) {
         await AuthService.logout();
@@ -284,7 +286,8 @@ class EventService {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body)['rows'];
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final List<dynamic> data = jsonDecode(utf8DecodedBody)['rows'];
         return data.map((item) => item as Map<String, dynamic>).toList();
       } else if (response.statusCode == 401) {
         await AuthService.logout();
@@ -339,7 +342,8 @@ class EventService {
       );
 
       if (response.statusCode == 200) {
-        return Event.fromJson(jsonDecode(response.body));
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        return Event.fromJson(jsonDecode(utf8DecodedBody));
       } else {
         final errorData = jsonDecode(response.body);
         throw Exception(

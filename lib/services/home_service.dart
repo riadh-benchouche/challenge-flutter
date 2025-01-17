@@ -51,7 +51,8 @@ class HomeService {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = jsonDecode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final List<dynamic> jsonData = jsonDecode(utf8DecodedBody);
         _topAssociations = jsonData
             .take(3)
             .map((json) => Association.fromJson(json))
@@ -75,7 +76,8 @@ class HomeService {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final Map<String, dynamic> jsonData = jsonDecode(utf8DecodedBody);
         _recentEvents = (jsonData['rows'] as List)
             .map((json) => Event.fromJson(json))
             .toList()

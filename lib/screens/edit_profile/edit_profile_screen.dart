@@ -64,7 +64,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final responseData = jsonDecode(utf8DecodedBody);
         final updatedUserData = {
           ...(AuthService.userData ?? {}),
           ...(responseData as Map<String, dynamic>)
@@ -114,7 +115,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
 
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final responseData = jsonDecode(utf8DecodedBody);
 
         // Mise à jour des données utilisateur dans le service
         final updatedUserData = {

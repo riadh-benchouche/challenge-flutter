@@ -24,7 +24,8 @@ class CategoryService {
       );
 
       if (response.statusCode == 200) {
-        final decodedData = jsonDecode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final decodedData = jsonDecode(utf8DecodedBody);
         if (decodedData is List) {
           _categories =
               decodedData.map((item) => CategoryModel.fromJson(item)).toList();

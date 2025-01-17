@@ -86,7 +86,8 @@ class MessageService {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final List<dynamic> data = json.decode(utf8DecodedBody);
         userAssociations =
             data.map((json) => Association.fromJson(json)).toList();
       } else {

@@ -78,7 +78,8 @@ class AssociationService {
       }
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = jsonDecode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final List<dynamic> jsonData = jsonDecode(utf8DecodedBody);
         _associations =
             jsonData.map((json) => Association.fromJson(json)).toList();
         return _associations!;
@@ -100,7 +101,8 @@ class AssociationService {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final Map<String, dynamic> jsonData = jsonDecode(utf8DecodedBody);
         final List<dynamic> rows = jsonData['rows'] as List;
         if (rows.isEmpty) {
           _associations = [];
@@ -126,7 +128,8 @@ class AssociationService {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final Map<String, dynamic> jsonData = jsonDecode(utf8DecodedBody);
         final List<dynamic> rows = jsonData['rows'] as List;
         if (rows.isEmpty) {
           _associationsAll = []; // Correction ici
@@ -178,7 +181,8 @@ class AssociationService {
       );
 
       if (response.statusCode == 200) {
-        _currentAssociation = Association.fromJson(jsonDecode(response.body));
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        _currentAssociation = Association.fromJson(jsonDecode(utf8DecodedBody));
         return _currentAssociation!;
       } else if (response.statusCode == 401) {
         await AuthService.logout();
@@ -198,7 +202,8 @@ class AssociationService {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final Map<String, dynamic> data = jsonDecode(utf8DecodedBody);
         return data['isMember'] ?? false;
       } else if (response.statusCode == 401) {
         await AuthService.logout();
@@ -246,7 +251,9 @@ class AssociationService {
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        final newAssociation = Association.fromJson(jsonDecode(response.body));
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final newAssociation =
+            Association.fromJson(jsonDecode(utf8DecodedBody));
         await getAssociations(); // Rafraîchir la liste
         return newAssociation;
       } else if (response.statusCode == 401) {
@@ -265,7 +272,8 @@ class AssociationService {
         headers: _headers);
 
     if (response.statusCode == 200) {
-      final List<dynamic> jsonData = jsonDecode(response.body);
+      final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+      final List<dynamic> jsonData = jsonDecode(utf8DecodedBody);
       return jsonData.map((json) => Association.fromJson(json)).toList();
     } else {
       throw Exception('Associations non trouvées : ${response.body}');
@@ -284,7 +292,8 @@ class AssociationService {
     );
 
     if (response.statusCode == 200) {
-      return Association.fromJson(jsonDecode(response.body));
+      final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+      return Association.fromJson(jsonDecode(utf8DecodedBody));
     }
 
     throw Exception(
@@ -316,7 +325,8 @@ class AssociationService {
     final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode == 200) {
-      return Association.fromJson(jsonDecode(response.body));
+      final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+      return Association.fromJson(jsonDecode(utf8DecodedBody));
     }
 
     throw Exception('Impossible de mettre à jour l\'image : ${response.body}');
