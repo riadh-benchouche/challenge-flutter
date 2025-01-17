@@ -45,6 +45,73 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
+  Future<void> _handleForgotPassword(BuildContext context) async {
+    final emailController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Mot de passe oublié'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: emailController,
+            decoration: const InputDecoration(labelText: 'Email'),
+            keyboardType: TextInputType.emailAddress,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Veuillez entrer votre email';
+              }
+              if (!value.contains('@')) {
+                return 'Veuillez entrer un email valide';
+              }
+              return null;
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                try {
+                  await AuthService.forgotPassword(emailController.text.trim());
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Un email de réinitialisation a été envoyé. Veuillez vérifier votre boîte de réception.',
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                  Navigator.pop(context);
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Erreur : ${e.toString()}',
+                        ),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            },
+            child: const Text('Envoyer'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -173,6 +240,24 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                     ),
                     const SizedBox(height: 15),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        TextButton(
+                          onPressed: _isLoading
+                              ? null
+                              : () => _handleForgotPassword(context),
+                          child: Text(
+                            'Mot de passe oublié ?',
+                            style: TextStyle(
+                              color: _isLoading
+                                  ? theme.disabledColor
+                                  : theme.primaryColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
