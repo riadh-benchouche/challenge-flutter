@@ -76,7 +76,8 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final String utf8DecodedBody = utf8.decode(response.bodyBytes);
+        final data = jsonDecode(utf8DecodedBody);
         _token = data['token'];
         _refreshToken = data['refresh_token'];
         _userData = data['user'];
