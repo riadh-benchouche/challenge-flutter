@@ -83,6 +83,17 @@ class _SignupScreenState extends State<SignupScreen> {
         _passController.text.trim(),
         context,
       );
+      // Ajout de la redirection après le succès de l'inscription
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Inscription réussie. Veuillez vous connecter.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Redirection vers la page de login
+        context.go('/login');
+      }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
